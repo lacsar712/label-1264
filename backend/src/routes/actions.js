@@ -202,4 +202,12 @@ router.get(
   asyncHandler(notification.adminGetNotificationList)
 );
 
+router.post(
+  '/learning-path/resources/:phaseResourceId/toggle',
+  auth,
+  [body('completed').isBoolean()],
+  validate,
+  asyncHandler(action.togglePhaseResource)
+);
+
 module.exports = router;

@@ -19,6 +19,12 @@ const SystemParam = require('./systemParam')(sequelize, DataTypes);
 const SystemLog = require('./systemLog')(sequelize, DataTypes);
 const LearningNote = require('./learningNote')(sequelize, DataTypes);
 const Notification = require('./notification')(sequelize, DataTypes);
+const LearningPathTemplate = require('./learningPathTemplate')(sequelize, DataTypes);
+const LearningPhaseTemplate = require('./learningPhaseTemplate')(sequelize, DataTypes);
+const PhaseResourceTemplate = require('./phaseResourceTemplate')(sequelize, DataTypes);
+const UserLearningPath = require('./userLearningPath')(sequelize, DataTypes);
+const UserLearningPhase = require('./userLearningPhase')(sequelize, DataTypes);
+const UserPhaseResource = require('./userPhaseResource')(sequelize, DataTypes);
 
 User.hasMany(UserTag, { foreignKey: 'userId', as: 'tags' });
 User.hasMany(LearningNote, { foreignKey: 'userId', as: 'learningNotes' });
@@ -69,6 +75,27 @@ User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Notification.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
 
+LearningPathTemplate.hasMany(LearningPhaseTemplate, { foreignKey: 'templateId', as: 'phases' });
+LearningPhaseTemplate.belongsTo(LearningPathTemplate, { foreignKey: 'templateId', as: 'template' });
+
+LearningPhaseTemplate.hasMany(PhaseResourceTemplate, { foreignKey: 'phaseTemplateId', as: 'resources' });
+PhaseResourceTemplate.belongsTo(LearningPhaseTemplate, { foreignKey: 'phaseTemplateId', as: 'phaseTemplate' });
+PhaseResourceTemplate.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' });
+
+User.hasMany(UserLearningPath, { foreignKey: 'userId', as: 'learningPaths' });
+UserLearningPath.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+UserLearningPath.belongsTo(LearningPathTemplate, { foreignKey: 'templateId', as: 'template' });
+UserLearningPath.belongsTo(UserLearningPhase, { foreignKey: 'currentPhaseId', as: 'currentPhase' });
+
+UserLearningPath.hasMany(UserLearningPhase, { foreignKey: 'learningPathId', as: 'phases' });
+UserLearningPhase.belongsTo(UserLearningPath, { foreignKey: 'learningPathId', as: 'learningPath' });
+UserLearningPhase.belongsTo(LearningPhaseTemplate, { foreignKey: 'phaseTemplateId', as: 'phaseTemplate' });
+
+UserLearningPhase.hasMany(UserPhaseResource, { foreignKey: 'phaseId', as: 'resources' });
+UserPhaseResource.belongsTo(UserLearningPhase, { foreignKey: 'phaseId', as: 'phase' });
+UserPhaseResource.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' });
+UserPhaseResource.belongsTo(PhaseResourceTemplate, { foreignKey: 'resourceTemplateId', as: 'resourceTemplate' });
+
 module.exports = {
   sequelize,
   User,
@@ -88,4 +115,10 @@ module.exports = {
   SystemLog,
   LearningNote,
   Notification,
+  LearningPathTemplate,
+  LearningPhaseTemplate,
+  PhaseResourceTemplate,
+  UserLearningPath,
+  UserLearningPhase,
+  UserPhaseResource,
 };

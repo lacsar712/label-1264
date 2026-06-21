@@ -22,4 +22,7 @@ router.get('/notes/resources/available', auth, asyncHandler(page.noteResources))
 router.get('/admin/notes', auth, requireAdmin, asyncHandler(page.adminNotes));
 router.get('/admin/notes/:noteId', auth, requireAdmin, asyncHandler(page.adminNoteDetail));
 
+router.get('/learning-path/summary', auth, asyncHandler(page.learningPathSummary));
+router.get('/learning-path', auth, asyncHandler(page.learningPath));
+
 module.exports = router;

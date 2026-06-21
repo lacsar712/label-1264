@@ -10,8 +10,10 @@ const {
   SystemLog,
   UserBehavior,
   LearningNote,
+  UserPhaseResource,
 } =
   require('../models');
+const { updateResourceProgress } = require('../services/pages/learningPathService');
 
 async function ensureCategoryByCode(categoryId) {
   let category = await ResourceCategory.findOne({ where: { categoryCode: categoryId } });
@@ -505,6 +507,37 @@ async function deleteNote(req, res) {
   return res.json({ ok: true });
 }
 
+async function togglePhaseResource(req, res) {
+  const userId = req.user.id;
+  const { phaseResourceId } = req.params;
+  const { completed } = req.body;
+
+  const result = await updateResourceProgress(userId, parseInt(phaseResourceId), Boolean(completed));
+
+  const phaseResource = await UserPhaseResource.findOne({
+    where: { id: phaseResourceId, userId },
+  });
+  if (phaseResource) {
+    await UserBehavior.create({
+      userId,
+      type: completed ? '学习' : '取消完成',
+      resourceId: phaseResource.resourceId,
+      occurredAt: new Date(),
+      dwellSeconds: completed ? 60 : 10,
+    });
+
+    await SystemLog.create({
+      actorUserId: userId,
+      type: '学习路径',
+      content: `${completed ? '标记完成' : '取消完成'} 学习路径资源 #${phaseResourceId}`,
+      ip: req.ip || '',
+      status: '成功',
+    });
+  }
+
+  return res.json({ ok: true, data: result });
+}
+
 module.exports = {
   favorite,
   learn,
@@ -528,4 +561,5 @@ module.exports = {
   createNote,
   updateNote,
   deleteNote,
+  togglePhaseResource,
 };

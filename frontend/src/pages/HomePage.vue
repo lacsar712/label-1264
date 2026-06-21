@@ -1,12 +1,62 @@
 <script setup>
-import { computed } from 'vue'
-import { ElButton, ElCard, ElCol, ElRow, ElSkeleton, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  ElButton,
+  ElCard,
+  ElCol,
+  ElRow,
+  ElSkeleton,
+  ElTable,
+  ElTableColumn,
+  ElTag,
+  ElProgress,
+  ElIcon,
+} from 'element-plus'
+import {
+  Target,
+  ArrowRight,
+  Clock,
+  CheckCircle,
+  ListChecks,
+} from '@element-plus/icons-vue'
 
 import EChart from '../components/EChart.vue'
 import { api } from '../lib/api'
 import { usePageData } from '../lib/usePageData'
 
+const router = useRouter()
 const { data, loading, refresh } = usePageData('/pages/home')
+const learningPathSummary = ref(null)
+const loadingPath = ref(false)
+
+async function loadLearningPathSummary() {
+  loadingPath.value = true
+  try {
+    const res = await api.get('/pages/learning-path/summary')
+    if (res.ok) {
+      learningPathSummary.value = res.data
+    }
+  } finally {
+    loadingPath.value = false
+  }
+}
+
+onMounted(() => {
+  loadLearningPathSummary()
+})
+
+function goToLearningPath() {
+  router.push('/learning-path')
+}
+
+const overallProgressPercent = computed(() => {
+  return Math.round((learningPathSummary.value?.overallProgress || 0) * 100)
+})
+
+const currentPhaseProgressPercent = computed(() => {
+  return Math.round((learningPathSummary.value?.currentPhase?.progress || 0) * 100)
+})
 
 const profileDonutOption = computed(() => ({
   tooltip: { trigger: 'item' },
@@ -94,10 +144,102 @@ async function doFavorite(row) {
             <div>
               <div style="font-weight: 800">首页 · 概览</div>
               <div style="font-size: 12px; color: #64748b">
-                核心入口：概览图表 + 轻量化表格
+                核心入口：学习路径 + 概览图表 + 轻量化表格
               </div>
             </div>
-            <ElButton :loading="loading" @click="refresh">刷新</ElButton>
+            <ElButton :loading="loading" @click="() => { refresh(); loadLearningPathSummary(); }">刷新</ElButton>
+          </div>
+        </ElCard>
+      </ElCol>
+    </ElRow>
+
+    <ElRow :gutter="16" style="margin-top: 16px">
+      <ElCol :span="24">
+        <ElCard
+          style="border-radius: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; transition: transform 0.2s"
+          :body-style="{ padding: '0' }"
+          @click="goToLearningPath"
+        >
+          <div style="padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px">
+            <div style="flex: 1; min-width: 0">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center">
+                  <ElIcon :size="24"><Target /></ElIcon>
+                </div>
+                <div>
+                  <div style="font-weight: 800; font-size: 18px">我的学习路径</div>
+                  <div style="font-size: 13px; opacity: 0.9">{{ learningPathSummary?.name || '个性化学习路线' }}</div>
+                </div>
+              </div>
+
+              <ElSkeleton :loading="loadingPath" animated>
+                <template v-if="learningPathSummary?.currentPhase">
+                  <div style="display: flex; align-items: flex-start; gap: 16px; margin-top: 16px; flex-wrap: wrap">
+                    <div style="flex: 1; min-width: 200px">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
+                        <span style="font-size: 13px; opacity: 0.9">
+                          <ElIcon style="vertical-align: middle; margin-right: 4px"><CheckCircle /></ElIcon>
+                          整体进度
+                        </span>
+                        <span style="font-weight: 700; font-size: 16px">{{ overallProgressPercent }}%</span>
+                      </div>
+                      <ElProgress
+                        :percentage="overallProgressPercent"
+                        :stroke-width="10"
+                        color="rgba(255,255,255,0.9)"
+                        :show-text="false"
+                      />
+                    </div>
+                    <div style="flex: 1; min-width: 200px">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
+                        <span style="font-size: 13px; opacity: 0.9">
+                          <ElIcon style="vertical-align: middle; margin-right: 4px"><ListChecks /></ElIcon>
+                          {{ learningPathSummary.currentPhase.name }}
+                        </span>
+                        <span style="font-weight: 700; font-size: 16px">{{ currentPhaseProgressPercent }}%</span>
+                      </div>
+                      <ElProgress
+                        :percentage="currentPhaseProgressPercent"
+                        :stroke-width="10"
+                        color="rgba(255,255,255,0.7)"
+                        :show-text="false"
+                      />
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 20px; margin-top: 16px; flex-wrap: wrap">
+                    <div style="display: flex; align-items: center; gap: 6px">
+                      <ElIcon style="opacity: 0.8"><Clock /></ElIcon>
+                      <span style="font-size: 13px; opacity: 0.9">
+                        预计总学时: {{ learningPathSummary.totalEstimatedHours }}小时
+                      </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px">
+                      <ElIcon style="opacity: 0.8"><ListChecks /></ElIcon>
+                      <span style="font-size: 13px; opacity: 0.9">
+                        阶段: {{ learningPathSummary.completedPhases }}/{{ learningPathSummary.totalPhases }} 已完成
+                      </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px">
+                      <ElIcon style="opacity: 0.8"><CheckCircle /></ElIcon>
+                      <span style="font-size: 13px; opacity: 0.9">
+                        资源: {{ learningPathSummary.currentPhase.completedResources }}/{{ learningPathSummary.currentPhase.totalResources }}
+                      </span>
+                    </div>
+                  </div>
+                </template>
+              </ElSkeleton>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+              <div
+                style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; transition: all 0.2s"
+                class="arrow-hover"
+              >
+                <ElIcon :size="28"><ArrowRight /></ElIcon>
+              </div>
+              <span style="font-size: 12px; opacity: 0.9">继续学习</span>
+            </div>
           </div>
         </ElCard>
       </ElCol>
@@ -245,3 +387,10 @@ async function doFavorite(row) {
     </ElRow>
   </div>
 </template>
+
+<style scoped>
+.arrow-hover:hover {
+  background: rgba(255,255,255,0.3) !important;
+  transform: translateX(4px);
+}
+</style>

@@ -6,6 +6,7 @@ const { getAdminUsersData } = require('../services/pages/adminUsersService');
 const { getAdminResourcesData } = require('../services/pages/adminResourcesService');
 const { getAdminSystemData } = require('../services/pages/adminSystemService');
 const { getNotesData, getAdminNotesData, getNoteDetail, getAdminNoteDetail, getAvailableResources } = require('../services/pages/notesService');
+const { getLearningPathSummary, getFullLearningPath } = require('../services/pages/learningPathService');
 
 async function home(req, res) {
   res.json({ ok: true, data: await getHomeData(req.user.id) });
@@ -66,6 +67,14 @@ async function noteResources(req, res) {
   res.json({ ok: true, data: await getAvailableResources(req.user.id, keyword) });
 }
 
+async function learningPathSummary(req, res) {
+  res.json({ ok: true, data: await getLearningPathSummary(req.user.id) });
+}
+
+async function learningPath(req, res) {
+  res.json({ ok: true, data: await getFullLearningPath(req.user.id) });
+}
+
 module.exports = {
   home,
   resources,
@@ -79,4 +88,6 @@ module.exports = {
   noteDetail,
   adminNoteDetail,
   noteResources,
+  learningPathSummary,
+  learningPath,
 };

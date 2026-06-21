@@ -14,6 +14,7 @@ import {
   Notebook,
   Bell,
   Message,
+  Guide,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -68,6 +69,10 @@ onUnmounted(() => {
           <el-menu-item index="/home">
             <el-icon><DataBoard /></el-icon>
             <span>首页</span>
+          </el-menu-item>
+          <el-menu-item index="/learning-path">
+            <el-icon><Guide /></el-icon>
+            <span>学习路径</span>
           </el-menu-item>
           <el-menu-item index="/resources">
             <el-icon><Files /></el-icon>

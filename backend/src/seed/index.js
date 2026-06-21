@@ -22,6 +22,7 @@ const {
   LearningNote,
   Notification,
 } = require('../models');
+const { createLearningPathTemplates } = require('../services/pages/learningPathService');
 const { logger } = require('../utils/logger');
 const { waitForDb } = require('../utils/waitForDb');
 
@@ -518,6 +519,9 @@ async function main() {
     ip: '127.0.0.1',
     status: '成功',
   });
+
+  await createLearningPathTemplates();
+  logger.info('learning_path_templates_created');
 
   logger.info('seed_done', {
     users: 2 + extraUsers.length,

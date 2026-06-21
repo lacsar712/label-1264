@@ -25,4 +25,9 @@ router.get('/admin/notes/:noteId', auth, requireAdmin, asyncHandler(page.adminNo
 router.get('/learning-path/summary', auth, asyncHandler(page.learningPathSummary));
 router.get('/learning-path', auth, asyncHandler(page.learningPath));
 
+router.get('/quiz/config', auth, asyncHandler(page.quizConfig));
+router.get('/quiz/recent-summary', auth, asyncHandler(page.quizRecentSummary));
+router.get('/quiz/history', auth, asyncHandler(page.quizHistory));
+router.get('/quiz/:quizId', auth, asyncHandler(page.quizDetail));
+
 module.exports = router;

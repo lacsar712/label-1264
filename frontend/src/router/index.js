@@ -16,6 +16,10 @@ import NotesPage from '../pages/NotesPage.vue'
 import NoteEditorPage from '../pages/NoteEditorPage.vue'
 import AdminNotesPage from '../pages/admin/AdminNotesPage.vue'
 import AdminNotificationsPage from '../pages/admin/AdminNotificationsPage.vue'
+import QuizCreatePage from '../pages/quiz/QuizCreatePage.vue'
+import QuizTakePage from '../pages/quiz/QuizTakePage.vue'
+import QuizResultPage from '../pages/quiz/QuizResultPage.vue'
+import QuizHistoryPage from '../pages/quiz/QuizHistoryPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -39,6 +43,10 @@ const router = createRouter({
         { path: 'notes', component: NotesPage },
         { path: 'notes/new', component: NoteEditorPage },
         { path: 'notes/:noteId', component: NoteEditorPage },
+        { path: 'quiz/create', component: QuizCreatePage },
+        { path: 'quiz/take/:quizId', component: QuizTakePage },
+        { path: 'quiz/result/:quizId', component: QuizResultPage },
+        { path: 'quiz/history', component: QuizHistoryPage },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/home' },

@@ -14,6 +14,7 @@ const {
 } =
   require('../models');
 const { updateResourceProgress } = require('../services/pages/learningPathService');
+const { createQuiz, answerQuestion, submitQuiz } = require('../services/pages/quizService');
 
 async function ensureCategoryByCode(categoryId) {
   let category = await ResourceCategory.findOne({ where: { categoryCode: categoryId } });
@@ -538,6 +539,75 @@ async function togglePhaseResource(req, res) {
   return res.json({ ok: true, data: result });
 }
 
+async function createUserQuiz(req, res) {
+  const { subject, difficulty, questionCount, sourceType } = req.body;
+  const userId = req.user.id;
+
+  if (!subject) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_PARAM', message: '请选择学科' } });
+  }
+
+  const result = await createQuiz({
+    userId,
+    subject,
+    difficulty: difficulty || '混合',
+    questionCount: Number(questionCount) || 10,
+    sourceType: sourceType || '随机',
+  });
+
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'NO_QUESTIONS', message: result.error } });
+  }
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '自测练习',
+    content: `创建试卷 ${result.code} (${subject}/${difficulty || '混合'})`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true, data: result });
+}
+
+async function answerQuizQuestion(req, res) {
+  const { quizId, questionId } = req.params;
+  const { userAnswer } = req.body;
+  const result = await answerQuestion({
+    userId: req.user.id,
+    quizId: parseInt(quizId),
+    questionId: parseInt(questionId),
+    userAnswer,
+  });
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'ANSWER_FAIL', message: result.error } });
+  }
+  return res.json({ ok: true, data: result });
+}
+
+async function submitUserQuiz(req, res) {
+  const { quizId } = req.params;
+  const { timeSpentSeconds } = req.body;
+  const result = await submitQuiz({
+    userId: req.user.id,
+    quizId: parseInt(quizId),
+    timeSpentSeconds,
+  });
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'SUBMIT_FAIL', message: result.error } });
+  }
+
+  await SystemLog.create({
+    actorUserId: req.user.id,
+    type: '自测练习',
+    content: `提交试卷 #${quizId}`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true, data: result.result });
+}
+
 module.exports = {
   favorite,
   learn,
@@ -562,4 +632,7 @@ module.exports = {
   updateNote,
   deleteNote,
   togglePhaseResource,
+  createUserQuiz,
+  answerQuizQuestion,
+  submitUserQuiz,
 };

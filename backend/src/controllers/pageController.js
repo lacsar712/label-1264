@@ -7,6 +7,14 @@ const { getAdminResourcesData } = require('../services/pages/adminResourcesServi
 const { getAdminSystemData } = require('../services/pages/adminSystemService');
 const { getNotesData, getAdminNotesData, getNoteDetail, getAdminNoteDetail, getAvailableResources } = require('../services/pages/notesService');
 const { getLearningPathSummary, getFullLearningPath } = require('../services/pages/learningPathService');
+const {
+  SUBJECTS,
+  DIFFICULTIES,
+  createQuiz,
+  getQuizDetail,
+  getQuizHistory,
+  getRecentQuizSummary,
+} = require('../services/pages/quizService');
 
 async function home(req, res) {
   res.json({ ok: true, data: await getHomeData(req.user.id) });
@@ -75,6 +83,34 @@ async function learningPath(req, res) {
   res.json({ ok: true, data: await getFullLearningPath(req.user.id) });
 }
 
+async function quizConfig(req, res) {
+  res.json({ ok: true, data: { subjects: SUBJECTS, difficulties: DIFFICULTIES.concat(['混合']) } });
+}
+
+async function quizDetail(req, res) {
+  const { quizId } = req.params;
+  const data = await getQuizDetail({ userId: req.user.id, quizId: parseInt(quizId) });
+  if (!data) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '试卷不存在' } });
+  }
+  res.json({ ok: true, data });
+}
+
+async function quizHistory(req, res) {
+  const { subject, limit, offset } = req.query;
+  const data = await getQuizHistory({
+    userId: req.user.id,
+    subject,
+    limit: parseInt(limit) || 20,
+    offset: parseInt(offset) || 0,
+  });
+  res.json({ ok: true, data });
+}
+
+async function quizRecentSummary(req, res) {
+  res.json({ ok: true, data: await getRecentQuizSummary({ userId: req.user.id }) });
+}
+
 module.exports = {
   home,
   resources,
@@ -90,4 +126,8 @@ module.exports = {
   noteResources,
   learningPathSummary,
   learningPath,
+  quizConfig,
+  quizDetail,
+  quizHistory,
+  quizRecentSummary,
 };

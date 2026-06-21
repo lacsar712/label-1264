@@ -210,4 +210,33 @@ router.post(
   asyncHandler(action.togglePhaseResource)
 );
 
+router.post(
+  '/quiz/create',
+  auth,
+  [
+    body('subject').isString().trim().isLength({ min: 1, max: 32 }),
+    body('difficulty').optional().isIn(['基础', '提高', '挑战', '混合']),
+    body('questionCount').optional().isInt({ min: 1, max: 100 }),
+    body('sourceType').optional().isIn(['随机', '错题再练']),
+  ],
+  validate,
+  asyncHandler(action.createUserQuiz)
+);
+
+router.post(
+  '/quiz/:quizId/answer/:questionId',
+  auth,
+  [body('userAnswer').optional().isString().trim()],
+  validate,
+  asyncHandler(action.answerQuizQuestion)
+);
+
+router.post(
+  '/quiz/:quizId/submit',
+  auth,
+  [body('timeSpentSeconds').optional().isInt({ min: 0 })],
+  validate,
+  asyncHandler(action.submitUserQuiz)
+);
+
 module.exports = router;

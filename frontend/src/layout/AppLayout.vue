@@ -15,6 +15,8 @@ import {
   Bell,
   Message,
   Guide,
+  EditPen,
+  Histogram,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -90,6 +92,21 @@ onUnmounted(() => {
             <el-icon><Notebook /></el-icon>
             <span>{{ isAdmin ? '笔记管理' : '学习笔记' }}</span>
           </el-menu-item>
+
+          <el-sub-menu index="/quiz-submenu">
+            <template #title>
+              <el-icon><EditPen /></el-icon>
+              <span>自测练习</span>
+            </template>
+            <el-menu-item index="/quiz/create">
+              <el-icon><EditPen /></el-icon>
+              <span>发起自测</span>
+            </el-menu-item>
+            <el-menu-item index="/quiz/history">
+              <el-icon><Histogram /></el-icon>
+              <span>历史记录</span>
+            </el-menu-item>
+          </el-sub-menu>
 
           <el-sub-menu v-if="isAdmin" index="/admin">
             <template #title>

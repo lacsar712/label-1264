@@ -25,6 +25,9 @@ const PhaseResourceTemplate = require('./phaseResourceTemplate')(sequelize, Data
 const UserLearningPath = require('./userLearningPath')(sequelize, DataTypes);
 const UserLearningPhase = require('./userLearningPhase')(sequelize, DataTypes);
 const UserPhaseResource = require('./userPhaseResource')(sequelize, DataTypes);
+const Question = require('./question')(sequelize, DataTypes);
+const Quiz = require('./quiz')(sequelize, DataTypes);
+const QuizQuestion = require('./quizQuestion')(sequelize, DataTypes);
 
 User.hasMany(UserTag, { foreignKey: 'userId', as: 'tags' });
 User.hasMany(LearningNote, { foreignKey: 'userId', as: 'learningNotes' });
@@ -96,6 +99,13 @@ UserPhaseResource.belongsTo(UserLearningPhase, { foreignKey: 'phaseId', as: 'pha
 UserPhaseResource.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' });
 UserPhaseResource.belongsTo(PhaseResourceTemplate, { foreignKey: 'resourceTemplateId', as: 'resourceTemplate' });
 
+User.hasMany(Quiz, { foreignKey: 'userId', as: 'quizzes' });
+Quiz.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+Quiz.hasMany(QuizQuestion, { foreignKey: 'quizId', as: 'quizQuestions' });
+QuizQuestion.belongsTo(Quiz, { foreignKey: 'quizId', as: 'quiz' });
+QuizQuestion.belongsTo(Question, { foreignKey: 'questionId', as: 'question' });
+
 module.exports = {
   sequelize,
   User,
@@ -121,4 +131,7 @@ module.exports = {
   UserLearningPath,
   UserLearningPhase,
   UserPhaseResource,
+  Question,
+  Quiz,
+  QuizQuestion,
 };

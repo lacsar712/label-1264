@@ -1,11 +1,36 @@
 <script setup>
-import { computed } from 'vue'
-import { ElButton, ElCard, ElCol, ElRow, ElSkeleton, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElButton, ElCard, ElCol, ElRow, ElSkeleton, ElTable, ElTableColumn, ElTag, ElIcon, ElEmpty, ElProgress } from 'element-plus'
+import {
+  Histogram,
+  EditPen,
+  Trophy,
+  ArrowRight,
+} from '@element-plus/icons-vue'
 
 import EChart from '../components/EChart.vue'
 import { usePageData } from '../lib/usePageData'
+import { api } from '../lib/api'
 
+const router = useRouter()
 const { data, loading, refresh } = usePageData('/pages/progress')
+const quizSummary = ref(null)
+const quizSummaryLoading = ref(false)
+
+async function loadQuizSummary() {
+  quizSummaryLoading.value = true
+  try {
+    const res = await api.get('/pages/quiz/recent-summary')
+    if (res.data.ok) quizSummary.value = res.data.data
+  } catch (e) {
+    console.error(e)
+  } finally {
+    quizSummaryLoading.value = false
+  }
+}
+
+onMounted(loadQuizSummary)
 
 const subjectPieOption = computed(() => ({
   tooltip: { trigger: 'item' },
@@ -67,6 +92,78 @@ const funnelOption = computed(() => ({
     },
   ],
 }))
+
+const quizScoreCurveOption = computed(() => ({
+  tooltip: {
+    trigger: 'axis',
+    formatter: (params) => {
+      const p = params[0]
+      return `${p.data.subject}<br/>得分率: ${p.data.scoreRate}%<br/>${p.data.date}`
+    },
+  },
+  grid: { top: 20, left: 36, right: 12, bottom: 24, containLabel: true },
+  xAxis: {
+    type: 'category',
+    data: (quizSummary.value?.scoreCurve || []).map((_, i) => `第${i + 1}次`),
+    axisLabel: { fontSize: 10 },
+  },
+  yAxis: {
+    type: 'value',
+    min: 0,
+    max: 100,
+    axisLabel: { formatter: '{value}%', fontSize: 10 },
+  },
+  series: [
+    {
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 6,
+      lineStyle: { width: 2, color: '#8b5cf6' },
+      itemStyle: { color: '#8b5cf6', borderColor: '#fff', borderWidth: 2 },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(139, 92, 246, 0.25)' },
+            { offset: 1, color: 'rgba(139, 92, 246, 0)' },
+          ],
+        },
+      },
+      markLine: {
+        silent: true,
+        symbol: 'none',
+        lineStyle: { type: 'dashed', color: '#94a3b8', width: 1 },
+        data: [{ yAxis: 60, label: { formatter: '60%', fontSize: 9 } }],
+      },
+      data: (quizSummary.value?.scoreCurve || []).map((x) => ({
+        value: Number(x.scoreRate),
+        subject: x.subject,
+        date: x.date,
+      })),
+    },
+  ],
+}))
+
+function goQuizCreate() {
+  router.push('/quiz/create')
+}
+
+function goQuizHistory() {
+  router.push('/quiz/history')
+}
+
+function goQuizResult(row) {
+  router.push(`/quiz/result/${row.id}`)
+}
+
+function diffColor(d) {
+  if (d === '基础') return '#22c55e'
+  if (d === '提高') return '#f59e0b'
+  if (d === '挑战') return '#ef4444'
+  return '#6366f1'
+}
 </script>
 
 <template>
@@ -74,12 +171,142 @@ const funnelOption = computed(() => ({
     <ElRow :gutter="16">
       <ElCol :span="24">
         <ElCard style="border-radius: 14px">
-          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap">
             <div>
               <div style="font-weight: 800">学习进度模块</div>
               <div style="font-size: 12px; color: #64748b">追踪 + 复盘 + 目标</div>
             </div>
-            <ElButton :loading="loading" @click="refresh">刷新</ElButton>
+            <div style="display: flex; gap: 8px">
+              <ElButton @click="goQuizHistory">
+                <el-icon style="margin-right: 4px"><Histogram /></el-icon>
+                自测记录
+              </ElButton>
+              <ElButton type="primary" @click="goQuizCreate">
+                <el-icon style="margin-right: 4px"><EditPen /></el-icon>
+                发起自测
+              </ElButton>
+              <ElButton :loading="loading" @click="() => { refresh(); loadQuizSummary(); }">刷新</ElButton>
+            </div>
+          </div>
+        </ElCard>
+      </ElCol>
+    </ElRow>
+
+    <ElRow :gutter="16" style="margin-top: 16px">
+      <ElCol :span="24">
+        <ElCard
+          style="border-radius: 14px; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color: white; cursor: pointer; transition: transform 0.2s"
+          :body-style="{ padding: '0' }"
+          @click="goQuizHistory"
+          class="quiz-summary-card"
+        >
+          <div style="padding: 20px 24px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+              <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0">
+                <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+                  <el-icon :size="26"><Trophy /></el-icon>
+                </div>
+                <div style="flex: 1; min-width: 0">
+                  <div style="font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+                    最近自测
+                    <ElTag effect="dark" style="background: rgba(255,255,255,0.25); border: none; color: white">
+                      累计 {{ quizSummary?.totalCount || 0 }} 份答卷
+                    </ElTag>
+                  </div>
+                  <div style="font-size: 13px; opacity: 0.92; margin-top: 4px">
+                    一键回看历次成绩曲线与错题回顾
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; opacity: 0.9; font-weight: 600">
+                查看详情
+                <el-icon><ArrowRight /></el-icon>
+              </div>
+            </div>
+
+            <ElSkeleton :loading="quizSummaryLoading" animated style="margin-top: 16px">
+              <ElRow :gutter="12" style="margin-top: 8px">
+                <ElCol :xs="24" :md="15">
+                  <div v-if="quizSummary?.recent?.length" style="display: flex; flex-direction: column; gap: 8px">
+                    <div
+                      v-for="(r, idx) in quizSummary.recent.slice(0, 3)"
+                      :key="idx"
+                      style="padding: 10px 14px; background: rgba(255,255,255,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px"
+                      @click.stop="goQuizResult(r)"
+                    >
+                      <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1">
+                        <div
+                          :style="{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(255,255,255,0.3)',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            flexShrink: 0,
+                          }"
+                        >
+                          {{ r.subject.slice(0, 1) }}
+                        </div>
+                        <div style="min-width: 0; flex: 1">
+                          <div style="font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                            <span>{{ r.subject }}</span>
+                            <span style="font-size: 12px; opacity: 0.9; padding: 1px 8px; background: rgba(255,255,255,0.2); border-radius: 10px">
+                              {{ r.difficulty }}
+                            </span>
+                          </div>
+                          <div style="font-size: 12px; opacity: 0.8; margin-top: 2px">{{ r.submittedAt }}</div>
+                        </div>
+                      </div>
+                      <div style="text-align: right; flex-shrink: 0">
+                        <div style="font-weight: 800; font-size: 18px">{{ r.score }}/{{ r.totalScore }}</div>
+                        <div style="font-size: 12px; opacity: 0.85; margin-top: 1px">正确率 {{ r.accuracy }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else style="padding: 18px; text-align: center; opacity: 0.9">
+                    还没有自测记录，快去发起一次自测吧～
+                    <ElButton type="warning" size="small" style="margin-left: 8px" @click.stop="goQuizCreate">立即自测</ElButton>
+                  </div>
+                </ElCol>
+
+                <ElCol :xs="24" :md="9">
+                  <div style="background: rgba(255,255,255,0.18); border-radius: 10px; padding: 12px 14px; height: 100%; min-height: 140px">
+                    <div style="font-weight: 600; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between">
+                      <span>历次成绩曲线</span>
+                      <span style="font-size: 11px; opacity: 0.8">近{{ quizSummary?.scoreCurve?.length || 0 }}次</span>
+                    </div>
+                    <template v-if="quizSummary?.scoreCurve?.length">
+                      <EChart :option="quizScoreCurveOption" :height="110" />
+                    </template>
+                    <template v-else>
+                      <ElEmpty description="暂无成绩数据" image-size="60" style="padding: 14px 0; --el-empty-description-color: rgba(255,255,255,0.75)" />
+                    </template>
+                  </div>
+                </ElCol>
+              </ElRow>
+
+              <ElRow v-if="quizSummary?.subjectSummary?.length" :gutter="8" style="margin-top: 12px">
+                <ElCol v-for="s in quizSummary.subjectSummary.slice(0, 6)" :key="s.subject" :xs="12" :sm="8" :md="4">
+                  <div style="padding: 8px 12px; background: rgba(255,255,255,0.18); border-radius: 8px">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px">
+                      <span style="font-weight: 600; font-size: 13px">{{ s.subject }}</span>
+                      <span style="font-size: 11px; opacity: 0.85">{{ s.count }}次</span>
+                    </div>
+                    <ElProgress
+                      :percentage="Number(s.avgScore) || 0"
+                      :stroke-width="6"
+                      :show-text="false"
+                      color="rgba(255,255,255,0.9)"
+                    />
+                    <div style="font-size: 11px; opacity: 0.85; margin-top: 2px; text-align: right">均分率 {{ s.avgScore }}</div>
+                  </div>
+                </ElCol>
+              </ElRow>
+            </ElSkeleton>
           </div>
         </ElCard>
       </ElCol>
@@ -214,3 +441,10 @@ const funnelOption = computed(() => ({
     </ElRow>
   </div>
 </template>
+
+<style scoped>
+.quiz-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.3);
+}
+</style>

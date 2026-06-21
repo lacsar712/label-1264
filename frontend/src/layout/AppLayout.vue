@@ -18,6 +18,7 @@ import {
   EditPen,
   Histogram,
   Trophy,
+  Calendar,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -88,6 +89,10 @@ onUnmounted(() => {
           <el-menu-item index="/progress">
             <el-icon><TrendCharts /></el-icon>
             <span>学习进度</span>
+          </el-menu-item>
+          <el-menu-item index="/calendar">
+            <el-icon><Calendar /></el-icon>
+            <span>学习日历</span>
           </el-menu-item>
           <el-menu-item index="/leaderboard">
             <el-icon><Trophy /></el-icon>

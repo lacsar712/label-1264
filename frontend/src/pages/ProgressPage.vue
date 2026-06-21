@@ -7,6 +7,7 @@ import {
   EditPen,
   Trophy,
   ArrowRight,
+  Calendar,
 } from '@element-plus/icons-vue'
 
 import EChart from '../components/EChart.vue'
@@ -158,6 +159,10 @@ function goQuizResult(row) {
   router.push(`/quiz/result/${row.id}`)
 }
 
+function goCalendar() {
+  router.push('/calendar')
+}
+
 function diffColor(d) {
   if (d === '基础') return '#22c55e'
   if (d === '提高') return '#f59e0b'
@@ -176,7 +181,11 @@ function diffColor(d) {
               <div style="font-weight: 800">学习进度模块</div>
               <div style="font-size: 12px; color: #64748b">追踪 + 复盘 + 目标</div>
             </div>
-            <div style="display: flex; gap: 8px">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <ElButton @click="goCalendar">
+                <el-icon style="margin-right: 4px"><Calendar /></el-icon>
+                学习日历
+              </ElButton>
               <ElButton @click="goQuizHistory">
                 <el-icon style="margin-right: 4px"><Histogram /></el-icon>
                 自测记录

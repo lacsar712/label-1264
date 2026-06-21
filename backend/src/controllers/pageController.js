@@ -7,6 +7,7 @@ const { getAdminResourcesData } = require('../services/pages/adminResourcesServi
 const { getAdminSystemData } = require('../services/pages/adminSystemService');
 const { getNotesData, getAdminNotesData, getNoteDetail, getAdminNoteDetail, getAvailableResources } = require('../services/pages/notesService');
 const { getLearningPathSummary, getFullLearningPath } = require('../services/pages/learningPathService');
+const { getMonthCalendarData, getDayDetailData } = require('../services/pages/calendarService');
 const {
   SUBJECTS,
   DIFFICULTIES,
@@ -111,6 +112,21 @@ async function quizRecentSummary(req, res) {
   res.json({ ok: true, data: await getRecentQuizSummary({ userId: req.user.id }) });
 }
 
+async function calendarMonth(req, res) {
+  const { year, month } = req.query;
+  const now = new Date();
+  const y = parseInt(year) || now.getFullYear();
+  const m = parseInt(month) || now.getMonth() + 1;
+  res.json({ ok: true, data: await getMonthCalendarData(req.user.id, y, m) });
+}
+
+async function calendarDay(req, res) {
+  const { date } = req.query;
+  const now = new Date();
+  const d = date || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  res.json({ ok: true, data: await getDayDetailData(req.user.id, d) });
+}
+
 module.exports = {
   home,
   resources,
@@ -130,4 +146,6 @@ module.exports = {
   quizDetail,
   quizHistory,
   quizRecentSummary,
+  calendarMonth,
+  calendarDay,
 };

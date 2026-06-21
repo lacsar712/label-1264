@@ -8,6 +8,7 @@ const { getAdminSystemData } = require('../services/pages/adminSystemService');
 const { getNotesData, getAdminNotesData, getNoteDetail, getAdminNoteDetail, getAvailableResources } = require('../services/pages/notesService');
 const { getLearningPathSummary, getFullLearningPath } = require('../services/pages/learningPathService');
 const { getMonthCalendarData, getDayDetailData } = require('../services/pages/calendarService');
+const { getSettingsData } = require('../services/pages/settingsService');
 const {
   SUBJECTS,
   DIFFICULTIES,
@@ -127,6 +128,14 @@ async function calendarDay(req, res) {
   res.json({ ok: true, data: await getDayDetailData(req.user.id, d) });
 }
 
+async function settings(req, res) {
+  const data = await getSettingsData(req.user.id);
+  if (!data) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '用户不存在' } });
+  }
+  res.json({ ok: true, data });
+}
+
 module.exports = {
   home,
   resources,
@@ -148,4 +157,5 @@ module.exports = {
   quizRecentSummary,
   calendarMonth,
   calendarDay,
+  settings,
 };

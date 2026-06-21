@@ -22,6 +22,7 @@ import QuizResultPage from '../pages/quiz/QuizResultPage.vue'
 import QuizHistoryPage from '../pages/quiz/QuizHistoryPage.vue'
 import LeaderboardPage from '../pages/LeaderboardPage.vue'
 import StudyCalendarPage from '../pages/StudyCalendarPage.vue'
+import SettingsPage from '../pages/SettingsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -51,6 +52,7 @@ const router = createRouter({
         { path: 'quiz/result/:quizId', component: QuizResultPage },
         { path: 'quiz/history', component: QuizHistoryPage },
         { path: 'calendar', component: StudyCalendarPage },
+        { path: 'settings', component: SettingsPage },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/home' },

@@ -255,4 +255,40 @@ router.post(
   asyncHandler(action.submitReview)
 );
 
+router.put(
+  '/settings/profile',
+  auth,
+  [
+    body('name').optional().isString().trim().isLength({ min: 1, max: 64 }),
+    body('avatarColor').optional().isString().trim().isLength({ min: 1, max: 16 }),
+    body('subjectPreference').optional().isArray(),
+    body('chartTheme').optional().isIn(['light', 'dark']),
+  ],
+  validate,
+  asyncHandler(action.updateProfile)
+);
+
+router.put(
+  '/settings/password',
+  auth,
+  [
+    body('oldPassword').isString().isLength({ min: 1 }),
+    body('newPassword').isString().isLength({ min: 8 }),
+  ],
+  validate,
+  asyncHandler(action.changePassword)
+);
+
+router.put(
+  '/settings/admin-preferences',
+  auth,
+  requireAdmin,
+  [
+    body('pageSize').optional().isIn([10, 20, 50, 100]),
+    body('tableDensity').optional().isIn(['default', 'compact', 'loose']),
+  ],
+  validate,
+  asyncHandler(action.updateAdminPreferences)
+);
+
 module.exports = router;

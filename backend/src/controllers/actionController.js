@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const {
   Recommendation,
   RecommendationRule,
@@ -673,6 +674,113 @@ async function submitReview(req, res) {
   }
 }
 
+async function updateProfile(req, res) {
+  const userId = req.user.id;
+  const user = await User.findByPk(userId);
+  if (!user) return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '用户不存在' } });
+
+  const patch = {};
+  if (typeof req.body.name === 'string' && req.body.name.trim()) patch.name = req.body.name.trim();
+  if (typeof req.body.avatarColor === 'string' && req.body.avatarColor.trim()) patch.avatarColor = req.body.avatarColor.trim();
+  if (Array.isArray(req.body.subjectPreference)) patch.subjectPreference = req.body.subjectPreference;
+  if (typeof req.body.chartTheme === 'string' && ['light', 'dark'].includes(req.body.chartTheme)) patch.chartTheme = req.body.chartTheme;
+
+  await user.update(patch);
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '配置修改',
+    content: `更新个人设置`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({
+    ok: true,
+    data: {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      avatarColor: user.avatarColor,
+      chartTheme: user.chartTheme,
+      subjectPreference: user.subjectPreference,
+    },
+  });
+}
+
+async function changePassword(req, res) {
+  const userId = req.user.id;
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_PARAM', message: '请输入旧密码和新密码' } });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ ok: false, error: { code: 'WEAK_PASSWORD', message: '新密码长度不能少于8位' } });
+  }
+
+  const hasLetter = /[a-zA-Z]/.test(newPassword);
+  const hasDigit = /\d/.test(newPassword);
+  if (!hasLetter || !hasDigit) {
+    return res.status(400).json({ ok: false, error: { code: 'WEAK_PASSWORD', message: '新密码必须同时包含字母和数字' } });
+  }
+
+  const user = await User.findByPk(userId);
+  if (!user) return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '用户不存在' } });
+
+  const match = await bcrypt.compare(oldPassword, user.passwordHash);
+  if (!match) {
+    return res.status(400).json({ ok: false, error: { code: 'WRONG_PASSWORD', message: '旧密码不正确' } });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await user.update({ passwordHash });
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '配置修改',
+    content: '修改登录密码',
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true });
+}
+
+async function updateAdminPreferences(req, res) {
+  const userId = req.user.id;
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: '无权限' } });
+  }
+
+  const user = await User.findByPk(userId);
+  if (!user) return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '用户不存在' } });
+
+  const current = user.adminPreferences || { pageSize: 20, tableDensity: 'default' };
+  const patch = { ...current };
+
+  if (typeof req.body.pageSize === 'number' && [10, 20, 50, 100].includes(req.body.pageSize)) {
+    patch.pageSize = req.body.pageSize;
+  }
+  if (typeof req.body.tableDensity === 'string' && ['default', 'compact', 'loose'].includes(req.body.tableDensity)) {
+    patch.tableDensity = req.body.tableDensity;
+  }
+
+  await user.update({ adminPreferences: patch });
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '配置修改',
+    content: '更新管理偏好',
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true, data: patch });
+}
+
 module.exports = {
   favorite,
   learn,
@@ -705,4 +813,7 @@ module.exports = {
   getRecentReviewsList,
   getMyReview,
   submitReview,
+  updateProfile,
+  changePassword,
+  updateAdminPreferences,
 };

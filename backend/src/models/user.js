@@ -10,6 +10,9 @@ module.exports = (sequelize, DataTypes) => {
       stage: { type: DataTypes.STRING(32), allowNull: false },
       learningStyle: { type: DataTypes.STRING(32), allowNull: false, defaultValue: '视觉型' },
       subjectPreference: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
+      avatarColor: { type: DataTypes.STRING(16), allowNull: false, defaultValue: '#2563eb' },
+      chartTheme: { type: DataTypes.STRING(16), allowNull: false, defaultValue: 'light' },
+      adminPreferences: { type: DataTypes.JSON, allowNull: true, defaultValue: null },
       active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     },
     {

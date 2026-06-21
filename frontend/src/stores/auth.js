@@ -18,6 +18,12 @@ function setAuth({ token, user }) {
   localStorage.setItem('user', JSON.stringify(user))
 }
 
+function updateUser(patch) {
+  if (!state.user) return
+  state.user = { ...state.user, ...patch }
+  localStorage.setItem('user', JSON.stringify(state.user))
+}
+
 function clearAuth() {
   state.token = ''
   state.user = null
@@ -31,6 +37,7 @@ export function useAuth() {
     isAuthed: computed(() => Boolean(state.token)),
     isAdmin: computed(() => state.user?.role === 'admin'),
     setAuth,
+    updateUser,
     clearAuth,
   }
 }

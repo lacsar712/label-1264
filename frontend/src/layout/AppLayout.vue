@@ -19,6 +19,7 @@ import {
   Histogram,
   Trophy,
   Calendar,
+  UserFilled,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -103,6 +104,11 @@ onUnmounted(() => {
             <span>{{ isAdmin ? '笔记管理' : '学习笔记' }}</span>
           </el-menu-item>
 
+          <el-menu-item index="/settings">
+            <el-icon><UserFilled /></el-icon>
+            <span>个人设置</span>
+          </el-menu-item>
+
           <el-sub-menu index="/quiz-submenu">
             <template #title>
               <el-icon><EditPen /></el-icon>
@@ -166,13 +172,17 @@ onUnmounted(() => {
             </el-button>
 
             <el-dropdown>
-              <el-button type="primary" plain>
-                <span style="margin-right: 8px">{{ state.user?.name || '未登录' }}</span>
-                <SwitchButton style="width: 16px; height: 16px" />
-              </el-button>
+              <div class="user-badge">
+                <div class="user-avatar-sm" :style="{ backgroundColor: state.user?.avatarColor || '#2563eb' }">
+                  {{ (state.user?.name || '?').charAt(0) }}
+                </div>
+                <span class="user-name-text">{{ state.user?.name || '未登录' }}</span>
+                <SwitchButton style="width: 14px; height: 14px; color: #94a3b8" />
+              </div>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item disabled>{{ state.user?.role === 'admin' ? '管理员' : '学习者' }}</el-dropdown-item>
+                  <el-dropdown-item @click="$router.push('/settings')">个人设置</el-dropdown-item>
                   <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -208,5 +218,42 @@ onUnmounted(() => {
 .bell-badge :deep(.el-badge__content) {
   top: 4px;
   right: 2px;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.user-badge:hover {
+  background-color: #f1f5f9;
+}
+
+.user-avatar-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-name-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

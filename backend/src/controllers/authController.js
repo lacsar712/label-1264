@@ -27,6 +27,10 @@ async function login(req, res) {
         role: user.role,
         stage: user.stage,
         learningStyle: user.learningStyle,
+        avatarColor: user.avatarColor,
+        chartTheme: user.chartTheme,
+        subjectPreference: user.subjectPreference,
+        adminPreferences: user.adminPreferences,
       },
     },
   });
@@ -44,6 +48,9 @@ async function me(req, res) {
       stage: user.stage,
       learningStyle: user.learningStyle,
       subjectPreference: user.subjectPreference,
+      avatarColor: user.avatarColor,
+      chartTheme: user.chartTheme,
+      adminPreferences: user.adminPreferences,
     },
   });
 }

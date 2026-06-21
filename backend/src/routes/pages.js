@@ -32,5 +32,6 @@ router.get('/quiz/:quizId', auth, asyncHandler(page.quizDetail));
 
 router.get('/calendar/month', auth, asyncHandler(page.calendarMonth));
 router.get('/calendar/day', auth, asyncHandler(page.calendarDay));
+router.get('/settings', auth, asyncHandler(page.settings));
 
 module.exports = router;

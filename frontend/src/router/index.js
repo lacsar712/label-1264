@@ -20,6 +20,7 @@ import QuizCreatePage from '../pages/quiz/QuizCreatePage.vue'
 import QuizTakePage from '../pages/quiz/QuizTakePage.vue'
 import QuizResultPage from '../pages/quiz/QuizResultPage.vue'
 import QuizHistoryPage from '../pages/quiz/QuizHistoryPage.vue'
+import LeaderboardPage from '../pages/LeaderboardPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -34,6 +35,7 @@ const router = createRouter({
         { path: 'resources', component: ResourcesPage },
         { path: 'recommendation-analysis', component: RecommendationAnalysisPage },
         { path: 'progress', component: ProgressPage },
+        { path: 'leaderboard', component: LeaderboardPage },
         { path: 'learning-path', component: LearningPathPage },
         { path: 'admin/users', component: AdminUsersPage },
         { path: 'admin/resources', component: AdminResourcesPage },

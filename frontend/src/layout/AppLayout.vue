@@ -17,6 +17,7 @@ import {
   Guide,
   EditPen,
   Histogram,
+  Trophy,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -87,6 +88,10 @@ onUnmounted(() => {
           <el-menu-item index="/progress">
             <el-icon><TrendCharts /></el-icon>
             <span>学习进度</span>
+          </el-menu-item>
+          <el-menu-item index="/leaderboard">
+            <el-icon><Trophy /></el-icon>
+            <span>学习排行榜</span>
           </el-menu-item>
           <el-menu-item :index="isAdmin ? '/admin/notes' : '/notes'">
             <el-icon><Notebook /></el-icon>

@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 
 const { Resource, ResourceTag, UserResource } = require('../../models');
+const { getResourcesWithRatings, getRecentReviews } = require('../resourceReviewService');
 
 const SUBJECTS = ['语文', '数学', '英语', '物理', '化学', '生物'];
 const RESOURCE_TYPES = ['课程', '课件', '题库', '视频'];
@@ -36,6 +37,19 @@ async function getResourcesData(userId) {
   const resources = await Resource.findAll({ where: { deleted: false }, order: [['updatedAt', 'DESC']], limit: 60 });
   const tags = await ResourceTag.findAll();
 
+  const resourceIds = resources.map((r) => r.id);
+  const ratingsMap = await getResourcesWithRatings(resourceIds);
+
+  const userResources = await UserResource.findAll({
+    where: { userId, status: { [Op.in]: ['收藏', '待学', '学习中', '已完成'] } },
+    include: [{ model: Resource, as: 'resource', where: { deleted: false }, required: false }],
+    order: [['updatedAt', 'DESC']],
+  });
+
+  const completedResourceIds = userResources
+    .filter((ur) => ur.status === '已完成' && ur.resource)
+    .map((ur) => ur.resourceId);
+
   const categoryMap = SUBJECTS.reduce((acc, subject) => {
     acc[subject] = { subject, 课程: 0, 课件: 0, 题库: 0, 视频: 0 };
     return acc;
@@ -46,14 +60,21 @@ async function getResourcesData(userId) {
   }
   const resourceCategoryStacked = Object.values(categoryMap);
 
-  const searchTable = resources.slice(0, 20).map((r) => ({
-    resourceId: r.code,
-    name: r.name,
-    subject: r.subject,
-    difficulty: r.difficulty,
-    heat: r.heat,
-    updatedAt: r.updatedAt,
-  }));
+  const searchTable = resources.slice(0, 20).map((r) => {
+    const rating = ratingsMap[r.id] || { averageRating: 0, reviewCount: 0 };
+    return {
+      resourceId: r.code,
+      resourceDbId: r.id,
+      name: r.name,
+      subject: r.subject,
+      difficulty: r.difficulty,
+      heat: r.heat,
+      updatedAt: r.updatedAt,
+      averageRating: rating.averageRating,
+      reviewCount: rating.reviewCount,
+      canReview: completedResourceIds.includes(r.id),
+    };
+  });
 
   const tagCount = tags.reduce((acc, t) => {
     acc[t.name] = acc[t.name] || { name: t.name, count: 0, weightSum: 0 };
@@ -104,14 +125,8 @@ async function getResourcesData(userId) {
     }));
   }
 
-  const userResources = await UserResource.findAll({
-    where: { userId, status: { [Op.in]: ['收藏', '待学'] } },
-    include: [{ model: Resource, as: 'resource', where: { deleted: false }, required: false }],
-    order: [['updatedAt', 'DESC']],
-  });
-
   const favoriteTable = userResources
-    .filter((ur) => ur.resource)
+    .filter((ur) => ur.resource && ['收藏', '待学'].includes(ur.status))
     .map((ur) => ({
       id: ur.id,
       name: ur.resource?.name,
@@ -119,6 +134,8 @@ async function getResourcesData(userId) {
       progressPercent: ur.progressPercent,
       status: ur.status,
     }));
+
+  const recentReviews = await getRecentReviews(15);
 
   const favoriteCompletionTrend7d = [];
   for (const date of listRecentDates(7)) {
@@ -141,6 +158,7 @@ async function getResourcesData(userId) {
     tagRelationTable,
     favoriteCompletionTrend7d,
     favoriteTable,
+    recentReviews,
   };
 }
 

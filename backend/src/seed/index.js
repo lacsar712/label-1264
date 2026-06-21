@@ -24,6 +24,7 @@ const {
   Question,
   Quiz,
   QuizQuestion,
+  ResourceReview,
 } = require('../models');
 const { createLearningPathTemplates } = require('../services/pages/learningPathService');
 const { logger } = require('../utils/logger');
@@ -645,6 +646,50 @@ async function main() {
   await UserResource.bulkCreate(userResourceRows, { validate: true, ignoreDuplicates: true });
   await UserBehavior.bulkCreate(behaviorRows, { validate: true });
 
+  const completedUserResources = await UserResource.findAll({
+    where: { status: '已完成' },
+    include: [{ model: Resource, as: 'resource', where: { deleted: false } }],
+  });
+
+  const reviewComments = [
+    '讲解非常清晰，知识点覆盖全面，练习题质量很高，强烈推荐！',
+    '内容很实用，老师讲得通俗易懂，对考试帮助很大。',
+    '视频画面清晰，节奏适中，适合自主学习。配套练习设计得很好。',
+    '难度循序渐进，从基础到提高都有覆盖，适合不同层次的学生。',
+    '知识点讲解透彻，例题典型，做完后感觉提升很明显。',
+    '老师上课生动有趣，把复杂的知识点讲得很简单，容易理解。',
+    '资料整理得很系统，复习的时候用非常方便，节省了很多时间。',
+    '题型很新，和考试方向一致，做完以后正确率明显提高了。',
+    '总结的解题技巧很实用，遇到类似题目可以快速找到思路。',
+    '作为基础巩固非常好，概念讲得很清楚，适合打基础的同学。',
+  ];
+
+  const reviewRows = [];
+  const usedPairs = new Set();
+  for (const ur of completedUserResources) {
+    if (rng() > 0.55) continue;
+    const key = `${ur.userId}-${ur.resourceId}`;
+    if (usedPairs.has(key)) continue;
+    usedPairs.add(key);
+
+    const rating = 3 + Math.floor(rng() * 3);
+    const hasComment = rng() > 0.3;
+    const reviewDate = new Date(ur.completedAt?.getTime() || Date.now());
+    reviewDate.setDate(reviewDate.getDate() + Math.floor(rng() * 3));
+
+    reviewRows.push({
+      userId: ur.userId,
+      resourceId: ur.resourceId,
+      rating,
+      comment: hasComment ? pick(rng, reviewComments) : null,
+      isRecommended: rating >= 4 && rng() > 0.3,
+      likesCount: Math.floor(rng() * 20),
+      createdAt: reviewDate,
+      updatedAt: reviewDate,
+    });
+  }
+  await ResourceReview.bulkCreate(reviewRows, { validate: true, ignoreDuplicates: true });
+
   const allStudents = [student, ...extraUsers];
   const noteSamples = [
     { title: '二次函数解题技巧总结', subject: '数学', content: '# 二次函数解题技巧\n\n## 一、基本形式\n\n二次函数的一般形式为：\n\n```\ny = ax² + bx + c (a ≠ 0)\n```\n\n## 二、常见题型\n\n1. **求顶点坐标**\n   - 公式法：x = -b/(2a)\n   - 配方法：转化为顶点式\n\n2. **求与坐标轴交点**\n   - 与y轴交点：(0, c)\n   - 与x轴交点：解方程 ax² + bx + c = 0\n\n## 三、注意事项\n\n> 注意判别式 Δ = b² - 4ac 的应用\n\n- Δ > 0：两个不相等实根\n- Δ = 0：一个实根（重根）\n- Δ < 0：无实根' },
@@ -676,7 +721,6 @@ async function main() {
   }
   await LearningNote.bulkCreate(noteRows, { validate: true });
 
-  const allStudents = [student, ...extraUsers];
   const notificationSamples = [
     {
       type: 'system',
@@ -761,6 +805,7 @@ async function main() {
     batches: batches.length,
     notes: noteRows.length,
     notifications: notificationRows.length,
+    reviews: reviewRows.length,
   });
 }
 

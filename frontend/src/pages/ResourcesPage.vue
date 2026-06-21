@@ -14,9 +14,12 @@ import {
   ElTable,
   ElTableColumn,
   ElTag,
+  ElTooltip,
 } from 'element-plus'
 
 import EChart from '../components/EChart.vue'
+import RatingDisplay from '../components/RatingDisplay.vue'
+import ReviewDialog from '../components/ReviewDialog.vue'
 import { api } from '../lib/api'
 import { usePageData } from '../lib/usePageData'
 
@@ -103,6 +106,9 @@ const sortOrder = ref('desc')
 const page = ref(1)
 const pageSize = ref(8)
 
+const reviewDialogVisible = ref(false)
+const selectedResource = ref(null)
+
 const filteredSearchTable = computed(() => {
   const rows = data.value?.searchTable || []
   const kw = keyword.value.trim().toLowerCase()
@@ -128,6 +134,8 @@ const sortedSearchTable = computed(() => {
     if (sortField.value === 'heat') return (Number(a.heat || 0) - Number(b.heat || 0)) * order
     if (sortField.value === 'difficulty') return (difficultyRank(a.difficulty) - difficultyRank(b.difficulty)) * order
     if (sortField.value === 'resourceId') return String(a.resourceId || '').localeCompare(String(b.resourceId || '')) * order
+    if (sortField.value === 'rating') return (Number(a.averageRating || 0) - Number(b.averageRating || 0)) * order
+    if (sortField.value === 'reviewCount') return (Number(a.reviewCount || 0) - Number(b.reviewCount || 0)) * order
     return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * order
   })
   return rows
@@ -141,6 +149,19 @@ const pagedSearchTable = computed(() => {
   const start = (page.value - 1) * pageSize.value
   return sortedSearchTable.value.slice(start, start + pageSize.value)
 })
+
+function isHighRated(row) {
+  return Number(row.averageRating) >= 4.5 && Number(row.reviewCount) >= 3
+}
+
+function openReviewDialog(row) {
+  selectedResource.value = row
+  reviewDialogVisible.value = true
+}
+
+async function onReviewSuccess() {
+  await refresh()
+}
 
 async function unfavorite(row) {
   await api.delete(`/actions/user-resources/${row.id}`)
@@ -157,6 +178,12 @@ async function removeRow(row) {
   await api.delete(`/actions/user-resources/${row.id}`)
   await refresh()
 }
+
+function formatDate(dt) {
+  if (!dt) return ''
+  const d = new Date(dt)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 </script>
 
 <template>
@@ -167,7 +194,7 @@ async function removeRow(row) {
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
             <div>
               <div style="font-weight: 800">资源库模块</div>
-              <div style="font-size: 12px; color: #64748b">检索 + 分类 + 管理</div>
+              <div style="font-size: 12px; color: #64748b">检索 + 分类 + 评价 + 管理</div>
             </div>
             <ElButton :loading="loading" @click="refresh">刷新</ElButton>
           </div>
@@ -207,6 +234,8 @@ async function removeRow(row) {
                 <ElOption label="更新时间" value="updatedAt" />
                 <ElOption label="热度" value="heat" />
                 <ElOption label="难度" value="difficulty" />
+                <ElOption label="评分" value="rating" />
+                <ElOption label="评价数" value="reviewCount" />
                 <ElOption label="资源ID" value="resourceId" />
               </ElSelect>
               <ElSelect v-model="sortOrder" placeholder="排序方向" style="width: 110px">
@@ -218,12 +247,45 @@ async function removeRow(row) {
           <ElSkeleton :loading="loading" animated>
             <el-scrollbar height="280px">
               <ElTable :data="pagedSearchTable" size="small" style="width: 100%">
+                <ElTableColumn label="高口碑" width="70" align="center">
+                  <template #default="{ row }">
+                    <ElTag v-if="isHighRated(row)" type="success" effect="dark" size="small" round>
+                      ★ 精选
+                    </ElTag>
+                  </template>
+                </ElTableColumn>
                 <ElTableColumn prop="resourceId" label="资源ID" width="110" />
-                <ElTableColumn prop="name" label="名称" min-width="180" />
+                <ElTableColumn prop="name" label="名称" min-width="180">
+                  <template #default="{ row }">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <span :style="{ fontWeight: isHighRated(row) ? 700 : 500, color: isHighRated(row) ? '#16a34a' : '#1e293b' }">{{ row.name }}</span>
+                    </div>
+                  </template>
+                </ElTableColumn>
                 <ElTableColumn prop="subject" label="学科" width="70" />
                 <ElTableColumn prop="difficulty" label="难度" width="70" />
                 <ElTableColumn prop="heat" label="热度" width="70" />
-                <ElTableColumn prop="updatedAt" label="更新时间" min-width="150" />
+                <ElTableColumn label="评分" width="140">
+                  <template #default="{ row }">
+                    <RatingDisplay :rating="Number(row.averageRating)" size="small" />
+                    <div style="font-size: 11px; color: #94a3b8">{{ row.reviewCount }} 条评价</div>
+                  </template>
+                </ElTableColumn>
+                <ElTableColumn label="操作" width="100" fixed="right">
+                  <template #default="{ row }">
+                    <ElTooltip v-if="row.canReview" content="评价资源" placement="top">
+                      <ElButton
+                        size="small"
+                        type="primary"
+                        plain
+                        @click="openReviewDialog(row)"
+                      >评价</ElButton>
+                    </ElTooltip>
+                    <ElTooltip v-else content="完成学习后可评价" placement="top">
+                      <ElButton size="small" disabled>评价</ElButton>
+                    </ElTooltip>
+                  </template>
+                </ElTableColumn>
               </ElTable>
             </el-scrollbar>
             <div style="display: flex; justify-content: flex-end; padding-top: 8px">
@@ -314,5 +376,118 @@ async function removeRow(row) {
         </ElCard>
       </ElCol>
     </ElRow>
+
+    <ElRow :gutter="16" style="margin-top: 16px">
+      <ElCol :xs="24" :lg="14">
+        <ElCard style="border-radius: 14px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px">
+            <div style="font-weight: 700">最新评价流</div>
+            <div style="font-size: 12px; color: #64748b">来自同学们的真实评价</div>
+          </div>
+          <ElSkeleton :loading="loading" animated>
+            <el-scrollbar height="360px">
+              <div v-if="data?.recentReviews?.length === 0" style="text-align: center; padding: 40px; color: #94a3b8">
+                暂无评价，快来成为第一个评价的人吧！
+              </div>
+              <div v-else style="display: flex; flex-direction: column; gap: 12px; padding: 4px">
+                <div
+                  v-for="review in data?.recentReviews || []"
+                  :key="review.id"
+                  style="padding: 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0"
+                >
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <div
+                        style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 13px"
+                      >
+                        {{ review.userName?.charAt(0) || 'U' }}
+                      </div>
+                      <div>
+                        <div style="font-weight: 600; color: #1e293b; font-size: 13px">{{ review.userName }}</div>
+                        <div style="font-size: 11px; color: #94a3b8">{{ formatDate(review.createdAt) }}</div>
+                      </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <RatingDisplay :rating="Number(review.rating)" :show-text="false" size="small" />
+                      <ElTag v-if="review.isRecommended" size="small" type="success" effect="light">推荐</ElTag>
+                    </div>
+                  </div>
+                  <div style="font-size: 12px; color: #64748b; margin-bottom: 6px">
+                    评价了 <span style="color: #3b82f6; font-weight: 500">{{ review.resourceName }}</span>
+                    <span style="color: #cbd5e1; margin: 0 6px">|</span>
+                    <span>{{ review.resourceCode }}</span>
+                  </div>
+                  <div style="font-size: 13px; color: #334155; line-height: 1.6">{{ review.comment }}</div>
+                </div>
+              </div>
+            </el-scrollbar>
+          </ElSkeleton>
+        </ElCard>
+      </ElCol>
+      <ElCol :xs="24" :lg="10">
+        <ElCard style="border-radius: 14px">
+          <div style="font-weight: 700; margin-bottom: 12px">高口碑资源榜</div>
+          <ElSkeleton :loading="loading" animated>
+            <el-scrollbar height="360px">
+              <div style="display: flex; flex-direction: column; gap: 10px; padding: 4px">
+                <div
+                  v-for="(row, idx) in (data?.searchTable || []).filter(r => Number(r.averageRating) >= 4.0).slice(0, 8)"
+                  :key="row.resourceId"
+                  :style="{
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: idx === 0 ? '2px solid #16a34a' : '1px solid #e2e8f0',
+                    background: idx === 0 ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : '#f8fafc',
+                  }"
+                >
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <div
+                        :style="{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          background: idx === 0 ? '#16a34a' : idx === 1 ? '#22c55e' : idx === 2 ? '#4ade80' : '#86efac',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }"
+                      >{{ idx + 1 }}</div>
+                      <div :style="{ fontWeight: idx === 0 ? 700 : 600, color: idx === 0 ? '#166534' : '#1e293b', fontSize: '13px' }">
+                        {{ row.name }}
+                      </div>
+                    </div>
+                    <ElTag v-if="idx === 0" type="success" effect="dark" size="small">TOP 1</ElTag>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between">
+                    <RatingDisplay :rating="Number(row.averageRating)" size="small" />
+                    <div style="font-size: 11px; color: #94a3b8">{{ row.reviewCount }} 条评价</div>
+                  </div>
+                  <div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap">
+                    <ElTag size="small" type="info" effect="plain">{{ row.subject }}</ElTag>
+                    <ElTag size="small" type="info" effect="plain">{{ row.difficulty }}</ElTag>
+                  </div>
+                </div>
+                <div
+                  v-if="(data?.searchTable || []).filter(r => Number(r.averageRating) >= 4.0).length === 0"
+                  style="text-align: center; padding: 40px; color: #94a3b8"
+                >
+                  暂无高口碑资源
+                </div>
+              </div>
+            </el-scrollbar>
+          </ElSkeleton>
+        </ElCard>
+      </ElCol>
+    </ElRow>
+
+    <ReviewDialog
+      v-model="reviewDialogVisible"
+      :resource="selectedResource"
+      @success="onReviewSuccess"
+    />
   </div>
 </template>

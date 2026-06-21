@@ -239,4 +239,20 @@ router.post(
   asyncHandler(action.submitUserQuiz)
 );
 
+router.get('/resources/:resourceId/reviews/stats', auth, asyncHandler(action.getReviewStats));
+router.get('/resources/:resourceId/reviews', auth, asyncHandler(action.getReviews));
+router.get('/resources/reviews/recent', auth, asyncHandler(action.getRecentReviewsList));
+router.get('/resources/:resourceId/reviews/my', auth, asyncHandler(action.getMyReview));
+router.post(
+  '/resources/:resourceId/reviews',
+  auth,
+  [
+    body('rating').isInt({ min: 1, max: 5 }),
+    body('comment').optional().isString().trim().isLength({ max: 1000 }),
+    body('isRecommended').optional().isBoolean(),
+  ],
+  validate,
+  asyncHandler(action.submitReview)
+);
+
 module.exports = router;

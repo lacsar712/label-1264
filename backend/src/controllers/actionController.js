@@ -15,6 +15,13 @@ const {
   require('../models');
 const { updateResourceProgress } = require('../services/pages/learningPathService');
 const { createQuiz, answerQuestion, submitQuiz } = require('../services/pages/quizService');
+const {
+  getResourceReviewStats,
+  getResourceReviews,
+  getRecentReviews,
+  getUserReview,
+  createOrUpdateReview,
+} = require('../services/resourceReviewService');
 
 async function ensureCategoryByCode(categoryId) {
   let category = await ResourceCategory.findOne({ where: { categoryCode: categoryId } });
@@ -608,6 +615,64 @@ async function submitUserQuiz(req, res) {
   return res.json({ ok: true, data: result.result });
 }
 
+async function getReviewStats(req, res) {
+  const { resourceId } = req.params;
+  const resource = await Resource.findByPk(parseInt(resourceId));
+  if (!resource) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '资源不存在' } });
+  }
+  const stats = await getResourceReviewStats(parseInt(resourceId));
+  return res.json({ ok: true, data: stats });
+}
+
+async function getReviews(req, res) {
+  const { resourceId } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 10;
+  const resource = await Resource.findByPk(parseInt(resourceId));
+  if (!resource) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '资源不存在' } });
+  }
+  const result = await getResourceReviews(parseInt(resourceId), page, pageSize);
+  return res.json({ ok: true, data: result });
+}
+
+async function getRecentReviewsList(req, res) {
+  const limit = parseInt(req.query.limit) || 20;
+  const reviews = await getRecentReviews(limit);
+  return res.json({ ok: true, data: reviews });
+}
+
+async function getMyReview(req, res) {
+  const userId = req.user.id;
+  const { resourceId } = req.params;
+  const review = await getUserReview(userId, parseInt(resourceId));
+  return res.json({ ok: true, data: review });
+}
+
+async function submitReview(req, res) {
+  const userId = req.user.id;
+  const { resourceId } = req.params;
+  const { rating, comment, isRecommended } = req.body;
+
+  if (!rating || rating < 1 || rating > 5) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_PARAM', message: '评分必须在1-5之间' } });
+  }
+
+  try {
+    const result = await createOrUpdateReview(
+      userId,
+      parseInt(resourceId),
+      parseInt(rating),
+      comment,
+      isRecommended
+    );
+    return res.json({ ok: true, data: result });
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_OPERATION', message: err.message } });
+  }
+}
+
 module.exports = {
   favorite,
   learn,
@@ -635,4 +700,9 @@ module.exports = {
   createUserQuiz,
   answerQuizQuestion,
   submitUserQuiz,
+  getReviewStats,
+  getReviews,
+  getRecentReviewsList,
+  getMyReview,
+  submitReview,
 };

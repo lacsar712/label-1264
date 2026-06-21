@@ -28,6 +28,7 @@ const UserPhaseResource = require('./userPhaseResource')(sequelize, DataTypes);
 const Question = require('./question')(sequelize, DataTypes);
 const Quiz = require('./quiz')(sequelize, DataTypes);
 const QuizQuestion = require('./quizQuestion')(sequelize, DataTypes);
+const ResourceReview = require('./resourceReview')(sequelize, DataTypes);
 
 User.hasMany(UserTag, { foreignKey: 'userId', as: 'tags' });
 User.hasMany(LearningNote, { foreignKey: 'userId', as: 'learningNotes' });
@@ -106,6 +107,11 @@ Quiz.hasMany(QuizQuestion, { foreignKey: 'quizId', as: 'quizQuestions' });
 QuizQuestion.belongsTo(Quiz, { foreignKey: 'quizId', as: 'quiz' });
 QuizQuestion.belongsTo(Question, { foreignKey: 'questionId', as: 'question' });
 
+Resource.hasMany(ResourceReview, { foreignKey: 'resourceId', as: 'reviews' });
+ResourceReview.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' });
+User.hasMany(ResourceReview, { foreignKey: 'userId', as: 'resourceReviews' });
+ResourceReview.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -134,4 +140,5 @@ module.exports = {
   Question,
   Quiz,
   QuizQuestion,
+  ResourceReview,
 };

@@ -28,6 +28,7 @@ import ErrorBoundary from '../components/ErrorBoundary.vue'
 import NotificationCenter from '../components/NotificationCenter.vue'
 import { useAuth } from '../stores/auth'
 import { useNotification } from '../lib/useNotification'
+import { DEFAULT_AVATAR_COLOR } from '../lib/themeColors'
 
 const route = useRoute()
 const router = useRouter()
@@ -183,7 +184,7 @@ onUnmounted(() => {
 
             <el-dropdown>
               <div class="user-badge">
-                <div class="user-avatar-sm" :style="{ backgroundColor: state.user?.avatarColor || '#2563eb' }">
+                <div class="user-avatar-sm" :style="{ backgroundColor: state.user?.avatarColor || DEFAULT_AVATAR_COLOR }">
                   {{ (state.user?.name || '?').charAt(0) }}
                 </div>
                 <span class="user-name-text">{{ state.user?.name || '未登录' }}</span>

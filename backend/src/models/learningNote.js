@@ -14,10 +14,10 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: 'learning_notes',
       indexes: [
-        { fields: ['userId'] },
+        { fields: ['user_id'] },
         { fields: ['subject'] },
-        { fields: ['userId', 'subject'] },
-        { fields: ['updatedAt'] },
+        { fields: ['user_id', 'subject'] },
+        { fields: ['updated_at'] },
       ],
     }
   );

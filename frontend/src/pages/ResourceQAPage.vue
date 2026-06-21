@@ -25,6 +25,7 @@ import {
 
 import { api } from '../lib/api'
 import { useAuth } from '../stores/auth'
+import { DEFAULT_AVATAR_COLOR } from '../lib/themeColors'
 
 const { state } = useAuth()
 
@@ -374,7 +375,7 @@ function getMessageDisplay(msg) {
             </div>
 
             <div v-if="msg.role === 'user'" class="msg-avatar user">
-              <div class="user-avatar-sm" :style="{ backgroundColor: state.user?.avatarColor || '#2563eb' }">
+              <div class="user-avatar-sm" :style="{ backgroundColor: state.user?.avatarColor || DEFAULT_AVATAR_COLOR }">
                 {{ (state.user?.name || '?').charAt(0) }}
               </div>
             </div>

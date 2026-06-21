@@ -8,6 +8,7 @@ const routes = require('./routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { logger } = require('./utils/logger');
 const { waitForDb } = require('./utils/waitForDb');
+const { createLearningPathTemplates } = require('./services/pages/learningPathService');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(errorHandler);
 
 async function main() {
   await waitForDb({ retries: 40, delayMs: 2000 });
+  await createLearningPathTemplates();
 
   const port = Number(process.env.PORT || 8000);
   app.listen(port, () => {

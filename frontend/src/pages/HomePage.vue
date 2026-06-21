@@ -14,11 +14,11 @@ import {
   ElIcon,
 } from 'element-plus'
 import {
-  Target,
+  Aim,
   ArrowRight,
   Clock,
-  CheckCircle,
-  ListChecks,
+  CircleCheck,
+  Finished,
 } from '@element-plus/icons-vue'
 
 import EChart from '../components/EChart.vue'
@@ -164,7 +164,7 @@ async function doFavorite(row) {
             <div style="flex: 1; min-width: 0">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px">
                 <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center">
-                  <ElIcon :size="24"><Target /></ElIcon>
+                  <ElIcon :size="24"><Aim /></ElIcon>
                 </div>
                 <div>
                   <div style="font-weight: 800; font-size: 18px">我的学习路径</div>
@@ -178,7 +178,7 @@ async function doFavorite(row) {
                     <div style="flex: 1; min-width: 200px">
                       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
                         <span style="font-size: 13px; opacity: 0.9">
-                          <ElIcon style="vertical-align: middle; margin-right: 4px"><CheckCircle /></ElIcon>
+                          <ElIcon style="vertical-align: middle; margin-right: 4px"><CircleCheck /></ElIcon>
                           整体进度
                         </span>
                         <span style="font-weight: 700; font-size: 16px">{{ overallProgressPercent }}%</span>
@@ -193,7 +193,7 @@ async function doFavorite(row) {
                     <div style="flex: 1; min-width: 200px">
                       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
                         <span style="font-size: 13px; opacity: 0.9">
-                          <ElIcon style="vertical-align: middle; margin-right: 4px"><ListChecks /></ElIcon>
+                          <ElIcon style="vertical-align: middle; margin-right: 4px"><Finished /></ElIcon>
                           {{ learningPathSummary.currentPhase.name }}
                         </span>
                         <span style="font-weight: 700; font-size: 16px">{{ currentPhaseProgressPercent }}%</span>
@@ -215,13 +215,13 @@ async function doFavorite(row) {
                       </span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px">
-                      <ElIcon style="opacity: 0.8"><ListChecks /></ElIcon>
+                      <ElIcon style="opacity: 0.8"><Finished /></ElIcon>
                       <span style="font-size: 13px; opacity: 0.9">
                         阶段: {{ learningPathSummary.completedPhases }}/{{ learningPathSummary.totalPhases }} 已完成
                       </span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px">
-                      <ElIcon style="opacity: 0.8"><CheckCircle /></ElIcon>
+                      <ElIcon style="opacity: 0.8"><CircleCheck /></ElIcon>
                       <span style="font-size: 13px; opacity: 0.9">
                         资源: {{ learningPathSummary.currentPhase.completedResources }}/{{ learningPathSummary.currentPhase.totalResources }}
                       </span>

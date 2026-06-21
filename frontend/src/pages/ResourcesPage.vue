@@ -22,6 +22,18 @@ import RatingDisplay from '../components/RatingDisplay.vue'
 import ReviewDialog from '../components/ReviewDialog.vue'
 import { api } from '../lib/api'
 import { usePageData } from '../lib/usePageData'
+import {
+  BORDER_SLATE,
+  GREEN_50,
+  GREEN_100,
+  GREEN_300,
+  GREEN_400,
+  GREEN_500,
+  GREEN_600,
+  GREEN_700,
+  SLATE_50,
+  SLATE_800,
+} from '../lib/themeColors'
 
 const { data, loading, refresh } = usePageData('/pages/resources')
 
@@ -154,6 +166,46 @@ function isHighRated(row) {
   return Number(row.averageRating) >= 4.5 && Number(row.reviewCount) >= 3
 }
 
+function getResourceNameStyle(row) {
+  return {
+    fontWeight: isHighRated(row) ? 700 : 500,
+    color: isHighRated(row) ? GREEN_600 : SLATE_800,
+  }
+}
+
+function getTopResourceCardStyle(idx) {
+  return {
+    padding: '12px',
+    borderRadius: '10px',
+    border: idx === 0 ? `2px solid ${GREEN_600}` : `1px solid ${BORDER_SLATE}`,
+    background: idx === 0 ? `linear-gradient(135deg, ${GREEN_50}, ${GREEN_100})` : SLATE_50,
+  }
+}
+
+function getTopRankBadgeStyle(idx) {
+  const colors = [GREEN_600, GREEN_500, GREEN_400, GREEN_300]
+  return {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    background: colors[idx] || GREEN_300,
+    color: 'white',
+    fontWeight: 700,
+    fontSize: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
+}
+
+function getTopResourceTitleStyle(idx) {
+  return {
+    fontWeight: idx === 0 ? 700 : 600,
+    color: idx === 0 ? GREEN_700 : SLATE_800,
+    fontSize: '13px',
+  }
+}
+
 function openReviewDialog(row) {
   selectedResource.value = row
   reviewDialogVisible.value = true
@@ -258,7 +310,7 @@ function formatDate(dt) {
                 <ElTableColumn prop="name" label="名称" min-width="180">
                   <template #default="{ row }">
                     <div style="display: flex; align-items: center; gap: 8px">
-                      <span :style="{ fontWeight: isHighRated(row) ? 700 : 500, color: isHighRated(row) ? '#16a34a' : '#1e293b' }">{{ row.name }}</span>
+                      <span :style="getResourceNameStyle(row)">{{ row.name }}</span>
                     </div>
                   </template>
                 </ElTableColumn>
@@ -433,30 +485,12 @@ function formatDate(dt) {
                 <div
                   v-for="(row, idx) in (data?.searchTable || []).filter(r => Number(r.averageRating) >= 4.0).slice(0, 8)"
                   :key="row.resourceId"
-                  :style="{
-                    padding: '12px',
-                    borderRadius: '10px',
-                    border: idx === 0 ? '2px solid #16a34a' : '1px solid #e2e8f0',
-                    background: idx === 0 ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : '#f8fafc',
-                  }"
+                  :style="getTopResourceCardStyle(idx)"
                 >
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
                     <div style="display: flex; align-items: center; gap: 8px">
-                      <div
-                        :style="{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          background: idx === 0 ? '#16a34a' : idx === 1 ? '#22c55e' : idx === 2 ? '#4ade80' : '#86efac',
-                          color: 'white',
-                          fontWeight: 700,
-                          fontSize: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }"
-                      >{{ idx + 1 }}</div>
-                      <div :style="{ fontWeight: idx === 0 ? 700 : 600, color: idx === 0 ? '#166534' : '#1e293b', fontSize: '13px' }">
+                      <div :style="getTopRankBadgeStyle(idx)">{{ idx + 1 }}</div>
+                      <div :style="getTopResourceTitleStyle(idx)">
                         {{ row.name }}
                       </div>
                     </div>

@@ -21,10 +21,10 @@ import {
   Unlock,
   Check,
   Clock,
-  Target,
+  Aim,
   Star,
   ArrowLeft,
-  BookOpen,
+  Reading,
   VideoCamera,
   Files,
   DataLine,
@@ -56,7 +56,7 @@ const difficultyColorMap = {
 }
 
 const typeIconMap = {
-  '课程': BookOpen,
+  '课程': Reading,
   '视频': VideoCamera,
   '课件': Files,
   '题库': DataLine,
@@ -195,7 +195,7 @@ function scrollToPhase(phaseId) {
       <ElCol :xs="24" :lg="6">
         <ElCard style="border-radius: 14px; position: sticky; top: 16px">
           <div style="font-weight: 700; margin-bottom: 12px">
-            <ElIcon style="vertical-align: middle; margin-right: 6px"><Target /></ElIcon>
+            <ElIcon style="vertical-align: middle; margin-right: 6px"><Aim /></ElIcon>
             学习阶段导航
           </div>
           <ElSkeleton :loading="loading" animated>
@@ -301,7 +301,7 @@ function scrollToPhase(phaseId) {
 
                     <div style="margin-top: 14px; padding: 12px 16px; background: #f0f9ff; border-radius: 10px; border-left: 4px solid #3b82f6">
                       <div style="font-size: 13px; font-weight: 600; color: #1e40af; margin-bottom: 4px">
-                        <ElIcon style="vertical-align: middle; margin-right: 4px"><Target /></ElIcon>
+                        <ElIcon style="vertical-align: middle; margin-right: 4px"><Aim /></ElIcon>
                         学习目标
                       </div>
                       <div style="font-size: 14px; color: #1e3a5f; line-height: 1.6">
@@ -361,7 +361,7 @@ function scrollToPhase(phaseId) {
                               :style="{ backgroundColor: typeColorMap[resource.type] }"
                             >
                               <ElIcon :size="16">
-                                <component :is="typeIconMap[resource.type] || BookOpen" />
+                                <component :is="typeIconMap[resource.type] || Reading" />
                               </ElIcon>
                             </div>
                             <span

@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: 'chat_messages',
       indexes: [
-        { fields: ['sessionId', 'createdAt'] },
+        { fields: ['session_id', 'created_at'] },
       ],
     }
   );

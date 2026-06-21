@@ -30,6 +30,18 @@ import {
 } from '@element-plus/icons-vue'
 import EChart from '../../components/EChart.vue'
 import { api } from '../../lib/api'
+import {
+  AMBER_500,
+  AMBER_600,
+  BORDER_SLATE,
+  GREEN_100,
+  GREEN_600,
+  GREEN_500,
+  RED_100,
+  RED_500,
+  RED_600,
+  WHITE,
+} from '../../lib/themeColors'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,6 +93,29 @@ const scoreGrade = computed(() => {
   if (r >= 60) return { text: '及格', color: '#ca8a04', bg: '#fef9c3' }
   return { text: '待提高', color: '#dc2626', bg: '#fee2e2' }
 })
+
+const scoreHeaderStyle = computed(() => {
+  const rate = scoreRate.value
+  const start = rate >= 80 ? GREEN_500 : rate >= 60 ? AMBER_500 : RED_500
+  const end = rate >= 80 ? GREEN_600 : rate >= 60 ? AMBER_600 : RED_600
+  return {
+    padding: '28px 24px',
+    background: `linear-gradient(135deg, ${start} 0%, ${end} 100%)`,
+    color: 'white',
+  }
+})
+
+function getWrongOptionStyle(key, q) {
+  const isCorrect = key === q.correctAnswer
+  const isUserAnswer = key === q.userAnswer
+  return {
+    padding: '6px 10px',
+    borderRadius: '6px',
+    marginTop: '4px',
+    background: isCorrect ? GREEN_100 : (isUserAnswer ? RED_100 : WHITE),
+    borderLeft: `3px solid ${isCorrect ? GREEN_600 : (isUserAnswer ? RED_600 : BORDER_SLATE)}`,
+  }
+}
 
 const pieOption = computed(() => ({
   tooltip: { trigger: 'item' },
@@ -166,13 +201,7 @@ function goPrev() {
           :body-style="{ padding: 0 }"
           v-loading="loading"
         >
-          <div
-            :style="{
-              padding: '28px 24px',
-              background: `linear-gradient(135deg, ${scoreRate >= 80 ? '#22c55e' : scoreRate >= 60 ? '#f59e0b' : '#ef4444'} 0%, ${scoreRate >= 80 ? '#16a34a' : scoreRate >= 60 ? '#d97706' : '#dc2626'} 100%)`,
-              color: 'white',
-            }"
-          >
+          <div :style="scoreHeaderStyle">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px">
               <div style="display: flex; align-items: center; gap: 18px">
                 <div style="width: 64px; height: 64px; border-radius: 18px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center">
@@ -284,13 +313,7 @@ function goPrev() {
                   {{ q.content }}
                 </div>
                 <div style="font-size: 14px; line-height: 1.8; color: #475569; margin-bottom: 8px">
-                  <div v-for="(text, key) in (q.options || {})" :key="key" :style="{
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    marginTop: '4px',
-                    background: key === q.correctAnswer ? '#dcfce7' : (key === q.userAnswer ? '#fee2e2' : '#fff'),
-                    borderLeft: `3px solid ${key === q.correctAnswer ? '#16a34a' : (key === q.userAnswer ? '#dc2626' : '#e2e8f0')}`,
-                  }">
+                  <div v-for="(text, key) in (q.options || {})" :key="key" :style="getWrongOptionStyle(key, q)">
                     <span style="font-weight: 600">{{ key }}.</span> {{ text }}
                     <span v-if="key === q.correctAnswer" style="color: #166534; margin-left: 8px; font-weight: 600">✓ 正确答案</span>
                     <span v-else-if="key === q.userAnswer" style="color: #991b1b; margin-left: 8px; font-weight: 600">✗ 你的选择</span>

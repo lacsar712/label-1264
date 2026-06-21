@@ -27,6 +27,23 @@ import {
   Warning,
 } from '@element-plus/icons-vue'
 import { api } from '../../lib/api'
+import {
+  BLUE_50,
+  BORDER_SLATE,
+  GREEN_100,
+  GREEN_50,
+  GREEN_600,
+  GREEN_700,
+  INDIGO_50,
+  INDIGO_500,
+  RED_100,
+  RED_50,
+  RED_600,
+  RED_800,
+  SLATE_50,
+  SLATE_500,
+  WHITE,
+} from '../../lib/themeColors'
 
 const route = useRoute()
 const router = useRouter()
@@ -217,6 +234,63 @@ function questionStatus(idx) {
   return 'danger'
 }
 
+function getOptionBackground(key, text) {
+  const q = currentQuestion.value
+  if (!q) return WHITE
+  if (isSubmitted.value) {
+    if (key === q.correctAnswer) return GREEN_100
+    if (key === q.userAnswer && !q.isCorrect) return RED_100
+  }
+  if (answerLockedMap.value[q.id]) {
+    if (key === feedbackResult.value?.correctAnswer) return GREEN_100
+    if (key === q.userAnswer && !feedbackResult.value?.isCorrect) return RED_100
+  }
+  return q.userAnswer && q.options[q.userAnswer] === text ? BLUE_50 : WHITE
+}
+
+function getFeedbackCardStyle() {
+  const isCorrect = feedbackResult.value?.isCorrect || currentQuestion.value?.isCorrect
+  return {
+    borderRadius: '12px',
+    background: isCorrect ? GREEN_50 : RED_50,
+    border: isCorrect ? '1px solid #bbf7d0' : '1px solid #fecaca',
+  }
+}
+
+function getFeedbackIconStyle() {
+  const isCorrect = feedbackResult.value?.isCorrect || currentQuestion.value?.isCorrect
+  return {
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: isCorrect ? GREEN_600 : RED_600,
+    color: 'white',
+  }
+}
+
+function getAnswerCardBackground(q, idx) {
+  if (isSubmitted.value) {
+    return q.isCorrect ? GREEN_100 : (q.userAnswer ? RED_100 : SLATE_50)
+  }
+  if (!q.userAnswer) return currentIndex.value === idx ? INDIGO_50 : SLATE_50
+  return q.isCorrect ? GREEN_100 : RED_100
+}
+
+function getAnswerCardColor(q, idx) {
+  if (isSubmitted.value) {
+    return q.isCorrect ? GREEN_700 : (q.userAnswer ? RED_800 : SLATE_500)
+  }
+  if (!q.userAnswer) return SLATE_500
+  return q.isCorrect ? GREEN_700 : RED_800
+}
+
+function getAnswerCardBorder(idx) {
+  return currentIndex.value === idx ? `2px solid ${INDIGO_500}` : `1px solid ${BORDER_SLATE}`
+}
+
 const submitPreviewVisible = ref(false)
 </script>
 
@@ -303,19 +377,7 @@ const submitPreviewVisible = ref(false)
                     borderRadius: '10px',
                     marginBottom: '10px',
                     cursor: (isSubmitted || answerLockedMap[currentQuestion.id]) ? 'default' : 'pointer',
-                    background: (() => {
-                      if (isSubmitted) {
-                        if (key === currentQuestion.correctAnswer) return '#dcfce7'
-                        if (key === currentQuestion.userAnswer && !currentQuestion.isCorrect) return '#fee2e2'
-                      }
-                      if (answerLockedMap[currentQuestion.id]) {
-                        if (key === feedbackResult?.correctAnswer) return '#dcfce7'
-                        if (key === currentQuestion.userAnswer && !feedbackResult?.isCorrect) return '#fee2e2'
-                      }
-                      return currentQuestion.userAnswer && currentQuestion.options[currentQuestion.userAnswer] === text
-                        ? '#eff6ff'
-                        : '#fff'
-                    })(),
+                    background: getOptionBackground(key, text),
                     transition: 'all 0.2s',
                   }"
                   @click="() => selectAnswer(text)"
@@ -339,24 +401,11 @@ const submitPreviewVisible = ref(false)
                 <ElDivider />
                 <ElCard
                   shadow="never"
-                  :style="{
-                    borderRadius: '12px',
-                    background: (feedbackResult?.isCorrect || currentQuestion.isCorrect) ? '#f0fdf4' : '#fef2f2',
-                    border: (feedbackResult?.isCorrect || currentQuestion.isCorrect) ? '1px solid #bbf7d0' : '1px solid #fecaca',
-                  }"
+                  :style="getFeedbackCardStyle()"
                 >
                   <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px">
                     <div
-                      :style="{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: (feedbackResult?.isCorrect || currentQuestion.isCorrect) ? '#16a34a' : '#dc2626',
-                        color: 'white',
-                      }"
+                      :style="getFeedbackIconStyle()"
                     >
                       <el-icon><Check v-if="feedbackResult?.isCorrect || currentQuestion.isCorrect" /><Close v-else /></el-icon>
                     </div>
@@ -427,21 +476,9 @@ const submitPreviewVisible = ref(false)
                 fontSize: 13,
                 fontWeight: 600,
                 userSelect: 'none',
-                border: currentIndex === idx ? '2px solid #6366f1' : '1px solid #e2e8f0',
-                background: (() => {
-                  if (isSubmitted) {
-                    return q.isCorrect ? '#dcfce7' : (q.userAnswer ? '#fee2e2' : '#f8fafc')
-                  }
-                  if (!q.userAnswer) return currentIndex === idx ? '#eef2ff' : '#f8fafc'
-                  return q.isCorrect ? '#dcfce7' : '#fee2e2'
-                })(),
-                color: (() => {
-                  if (isSubmitted) {
-                    return q.isCorrect ? '#166534' : (q.userAnswer ? '#991b1b' : '#64748b')
-                  }
-                  if (!q.userAnswer) return '#64748b'
-                  return q.isCorrect ? '#166534' : '#991b1b'
-                })(),
+                border: getAnswerCardBorder(idx),
+                background: getAnswerCardBackground(q, idx),
+                color: getAnswerCardColor(q, idx),
                 transition: 'all 0.15s',
               }"
             >

@@ -35,49 +35,68 @@ function calculateOverallProgress(phases) {
   return weighted / totalHours;
 }
 
-async function findMatchingTemplate(user) {
-  const userTags = await UserTag.findAll({ where: { userId: user.id } });
-  const subjectTags = userTags.filter(t => t.category === '学科偏好').map(t => t.name);
-  const styleTags = userTags.filter(t => t.category === '学习风格').map(t => t.name);
+function extractSubjectTags(userTags, user) {
+  const fromTags = userTags
+    .filter(t => t.category === '学科偏好')
+    .map(t => t.name.replace(/偏好$/, ''));
+  const fromPref = Array.isArray(user.subjectPreference) ? user.subjectPreference : [];
+  return [...new Set([...fromTags, ...fromPref])];
+}
 
-  const templates = await LearningPathTemplate.findAll({
-    where: {
-      targetStage: user.stage,
-      enabled: true,
-    },
+async function loadEnabledTemplates(whereClause = { enabled: true }) {
+  return LearningPathTemplate.findAll({
+    where: whereClause,
     include: [
       {
         model: LearningPhaseTemplate,
         as: 'phases',
+        separate: true,
+        order: [['phaseOrder', 'ASC']],
         include: [
           {
             model: PhaseResourceTemplate,
             as: 'resources',
-            include: [{ model: Resource, as: 'resource', where: { status: '上架' } }],
+            separate: true,
+            order: [['resourceOrder', 'ASC']],
+            include: [{ model: Resource, as: 'resource', required: false }],
           },
         ],
-        order: [['phaseOrder', 'ASC']],
       },
     ],
     order: [['id', 'ASC']],
   });
+}
 
+function scoreTemplate(template, subjectTags, styleTags, user) {
+  let score = 1;
+
+  if (template.targetStage === user.stage) {
+    score *= 1.2;
+  }
+
+  if (template.targetSubjects && template.targetSubjects.length > 0) {
+    const subjectMatch = template.targetSubjects.filter(s => subjectTags.includes(s)).length;
+    score *= 0.5 + 0.5 * (subjectMatch / Math.max(template.targetSubjects.length, 1));
+  }
+
+  if (template.targetLearningStyles && template.targetLearningStyles.length > 0) {
+    const styleMatch = template.targetLearningStyles.filter(
+      s => styleTags.includes(s) || s === user.learningStyle
+    ).length;
+    score *= 0.5 + 0.5 * (styleMatch / Math.max(template.targetLearningStyles.length, 1));
+  }
+
+  return score;
+}
+
+function pickBestTemplate(templates, subjectTags, styleTags, user) {
   let bestTemplate = null;
   let bestScore = 0;
 
   for (const template of templates) {
-    let score = 1;
+    if (!template.phases || template.phases.length === 0) continue;
 
-    if (template.targetSubjects && template.targetSubjects.length > 0) {
-      const subjectMatch = template.targetSubjects.filter(s => subjectTags.includes(s)).length;
-      score *= 0.5 + 0.5 * (subjectMatch / Math.max(template.targetSubjects.length, 1));
-    }
-
-    if (template.targetLearningStyles && template.targetLearningStyles.length > 0) {
-      const styleMatch = template.targetLearningStyles.filter(s => styleTags.includes(s) || s === user.learningStyle).length;
-      score *= 0.5 + 0.5 * (styleMatch / Math.max(template.targetLearningStyles.length, 1));
-    }
-
+    const score = scoreTemplate(template, subjectTags, styleTags, user);
     if (score > bestScore) {
       bestScore = score;
       bestTemplate = template;
@@ -85,6 +104,23 @@ async function findMatchingTemplate(user) {
   }
 
   return bestTemplate;
+}
+
+async function findMatchingTemplate(user) {
+  const userTags = await UserTag.findAll({ where: { userId: user.id } });
+  const subjectTags = extractSubjectTags(userTags, user);
+  const styleTags = userTags.filter(t => t.category === '学习风格').map(t => t.name);
+
+  const stageTemplates = await loadEnabledTemplates({
+    targetStage: user.stage,
+    enabled: true,
+  });
+
+  let bestTemplate = pickBestTemplate(stageTemplates, subjectTags, styleTags, user);
+  if (bestTemplate) return bestTemplate;
+
+  const allTemplates = await loadEnabledTemplates({ enabled: true });
+  return pickBestTemplate(allTemplates, subjectTags, styleTags, user);
 }
 
 async function createUserLearningPath(userId, template) {
@@ -117,6 +153,8 @@ async function createUserLearningPath(userId, template) {
 
     const phaseResources = [];
     for (const resourceTemplate of phaseTemplate.resources) {
+      if (!resourceTemplate.resource || resourceTemplate.resource.status !== '上架') continue;
+
       const userPhaseResource = await UserPhaseResource.create({
         userId,
         phaseId: userPhase.id,
@@ -131,6 +169,7 @@ async function createUserLearningPath(userId, template) {
       phaseResources.push(userPhaseResource);
     }
 
+    await userPhase.update({ totalResources: phaseResources.length });
     userPhase.resources = phaseResources;
     phases.push(userPhase);
   }
@@ -148,6 +187,7 @@ async function createUserLearningPath(userId, template) {
 async function getOrCreateLearningPath(userId) {
   const user = await User.findByPk(userId);
   if (!user) throw new Error('用户不存在');
+  if (user.role === 'admin') return null;
 
   let learningPath = await UserLearningPath.findOne({
     where: { userId },
@@ -180,6 +220,7 @@ async function getOrCreateLearningPath(userId) {
 
 async function getLearningPathSummary(userId) {
   const learningPath = await getOrCreateLearningPath(userId);
+  if (!learningPath) return null;
 
   const phases = learningPath.phases || [];
   for (const phase of phases) {
@@ -216,6 +257,7 @@ async function getLearningPathSummary(userId) {
 
 async function getFullLearningPath(userId) {
   const learningPath = await getOrCreateLearningPath(userId);
+  if (!learningPath) return null;
 
   const phases = learningPath.phases || [];
   const phaseData = [];
@@ -344,15 +386,19 @@ async function updateResourceProgress(userId, phaseResourceId, completed) {
   return await getFullLearningPath(userId);
 }
 
+const STAGE_TEMPLATE_CONFIGS = [
+  { stage: '小学', subjects: ['语文', '数学', '英语'] },
+  { stage: '初中', subjects: ['数学', '英语', '物理'] },
+  { stage: '高中', subjects: ['数学', '英语', '物理', '化学'] },
+];
+
 async function createLearningPathTemplates() {
-  const existing = await LearningPathTemplate.count();
-  if (existing > 0) return;
-
   const allResources = await Resource.findAll({ where: { status: '上架' } });
-  const subjects = ['数学', '英语', '物理'];
-  const stages = ['初中'];
 
-  for (const stage of stages) {
+  for (const { stage, subjects } of STAGE_TEMPLATE_CONFIGS) {
+    const existing = await LearningPathTemplate.findOne({ where: { targetStage: stage } });
+    if (existing) continue;
+
     const template = await LearningPathTemplate.create({
       code: `PATH-${stage}-MAIN`,
       name: `${stage}全科学习路径`,

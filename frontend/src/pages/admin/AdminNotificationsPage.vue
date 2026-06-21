@@ -47,7 +47,7 @@ const sendForm = reactive({
 
 const userSearch = ref('')
 const notificationPage = ref(1)
-const notificationPageSize = 10
+const notificationPageSize = ref(10)
 const notificationList = ref([])
 const notificationTotal = ref(0)
 const notificationsLoading = ref(false)

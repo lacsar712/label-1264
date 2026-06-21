@@ -23,12 +23,21 @@ import {
   Minus,
   Clock,
   Files,
-  Correct,
+  CircleCheck,
   Refresh,
 } from '@element-plus/icons-vue'
 
 import { api } from '../lib/api'
 import { useAuth } from '../stores/auth'
+import {
+  BLUE_50,
+  DEFAULT_AVATAR_COLOR,
+  GREEN_500,
+  PURPLE_500,
+  RED_500,
+  SLATE_100,
+  SLATE_500,
+} from '../lib/themeColors'
 
 const { isAdmin, state } = useAuth()
 const loading = ref(false)
@@ -216,6 +225,22 @@ function getCurrentValue() {
   }
 }
 
+function getUserRowBackground(userId) {
+  return userId === state.user?.id ? BLUE_50 : 'transparent'
+}
+
+function getRankChangeColor() {
+  if (rankChange.value > 0) return GREEN_500
+  if (rankChange.value < 0) return RED_500
+  return SLATE_500
+}
+
+function formatRankChange() {
+  if (rankChange.value > 0) return `+${rankChange.value}`
+  if (rankChange.value < 0) return String(rankChange.value)
+  return '持平'
+}
+
 function getSortValue(row) {
   if (activeTab.value === 'studyTime') return row.studyMinutes
   if (activeTab.value === 'completedResources') return row.completedResources
@@ -285,7 +310,7 @@ function getSortUnit() {
               <ElTabPane label="答题正确率" name="accuracy">
                 <template #label>
                   <div style="display: flex; align-items: center; gap: 6px">
-                    <el-icon><Correct /></el-icon>
+                    <el-icon><CircleCheck /></el-icon>
                     <span>答题正确率</span>
                   </div>
                 </template>
@@ -322,8 +347,8 @@ function getSortUnit() {
                               width: 32,
                               height: 32,
                               borderRadius: '50%',
-                              background: '#f1f5f9',
-                              color: '#64748b',
+                              background: SLATE_100,
+                              color: SLATE_500,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -344,7 +369,7 @@ function getSortUnit() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: 10,
-                          background: row.userId === state.user?.id ? '#eff6ff' : 'transparent',
+                          background: getUserRowBackground(row.userId),
                           padding: '4px 8px',
                           borderRadius: '8px',
                           margin: '-4px -8px',
@@ -394,7 +419,7 @@ function getSortUnit() {
                           <span style="font-weight: 500">{{ row.completedResources }} 个</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px">
-                          <ElIcon style="color: #64748b"><Correct /></ElIcon>
+                          <ElIcon style="color: #64748b"><CircleCheck /></ElIcon>
                           <span style="color: #64748b">正确率:</span>
                           <span style="font-weight: 500">{{ row.accuracy }}%</span>
                         </div>
@@ -416,7 +441,7 @@ function getSortUnit() {
       <ElCard shadow="never" :body-style="{ padding: '12px 16px' }" style="border-radius: 0">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
           <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0">
-            <ElAvatar :size="44" :style="{ backgroundColor: currentUserInfo?.avatarColor || '#8b5cf6', fontWeight: 600 }">
+            <ElAvatar :size="44" :style="{ backgroundColor: currentUserInfo?.avatarColor || PURPLE_500, fontWeight: 600 }">
               {{ maskName(state.user?.name || '我').slice(0, 1) }}
             </ElAvatar>
             <div style="min-width: 0">
@@ -455,16 +480,16 @@ function getSortUnit() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 4px,
+                  gap: '4px',
                   fontWeight: 700,
                   fontSize: 16,
-                  color: rankChange > 0 ? '#22c55e' : rankChange < 0 ? '#ef4444' : '#64748b',
+                  color: getRankChangeColor(),
                 }"
               >
                 <el-icon v-if="rankChange > 0"><ArrowUp /></el-icon>
                 <el-icon v-else-if="rankChange < 0"><ArrowDown /></el-icon>
                 <el-icon v-else><Minus /></el-icon>
-                <span>{{ rankChange > 0 ? `+${rankChange}` : rankChange < 0 ? rankChange : '持平' }}</span>
+                <span>{{ formatRankChange() }}</span>
               </div>
             </div>
           </div>

@@ -12,8 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: 'chat_sessions',
       indexes: [
-        { fields: ['userId', 'resourceId'] },
-        { fields: ['userId', 'lastMessageAt'] },
+        { fields: ['user_id', 'resource_id'] },
+        { fields: ['user_id', 'last_message_at'] },
       ],
     }
   );

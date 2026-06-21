@@ -32,6 +32,7 @@ import {
 } from '@element-plus/icons-vue'
 import EChart from '../../components/EChart.vue'
 import { api } from '../../lib/api'
+import { GREEN_600, RED_600 } from '../../lib/themeColors'
 
 const router = useRouter()
 const loading = ref(false)
@@ -95,6 +96,10 @@ function onSubjectChange() {
 
 function goToResult(row) {
   router.push(`/quiz/result/${row.id}`)
+}
+
+function getScoreColor(row) {
+  return row.totalScore && row.score / row.totalScore >= 0.6 ? GREEN_600 : RED_600
 }
 
 function goToTake(row) {
@@ -426,7 +431,7 @@ function accTag(v) {
                 <ElTableColumn label="得分" width="120" align="center">
                   <template #default="{ row }">
                     <div style="font-weight: 700">
-                      <span :style="{ color: (row.totalScore && row.score / row.totalScore >= 0.6) ? '#16a34a' : '#dc2626' }">
+                      <span :style="{ color: getScoreColor(row) }">
                         {{ row.score || 0 }}
                       </span>
                       <span style="color: #94a3b8; font-weight: 400"> / {{ row.totalScore }}</span>

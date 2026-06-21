@@ -18,6 +18,14 @@ const {
   getQuizHistory,
   getRecentQuizSummary,
 } = require('../services/pages/quizService');
+const {
+  getAvailableResourcesForQA,
+  getUserSessions,
+  getSessionMessages,
+  getOrCreateSession,
+  generateRecommendedQuestions,
+} = require('../services/qaService');
+const { Resource, ResourceTag } = require('../models');
 
 async function home(req, res) {
   res.json({ ok: true, data: await getHomeData(req.user.id) });
@@ -151,6 +159,35 @@ async function studyGroupDetail(req, res) {
   res.json({ ok: true, data });
 }
 
+async function qaIndex(req, res) {
+  const userId = req.user.id;
+  const availableResources = await getAvailableResourcesForQA(userId);
+  const sessions = await getUserSessions(userId);
+  res.json({ ok: true, data: { availableResources, sessions } });
+}
+
+async function qaSession(req, res) {
+  const userId = req.user.id;
+  const { sessionId } = req.params;
+  const result = await getSessionMessages(userId, parseInt(sessionId));
+  if (result.error) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: result.error } });
+  }
+  const recommendedQuestions = generateRecommendedQuestions(result.session);
+  res.json({ ok: true, data: { ...result, recommendedQuestions } });
+}
+
+async function qaSessionByResource(req, res) {
+  const userId = req.user.id;
+  const { resourceId } = req.params;
+  const result = await getOrCreateSession(userId, parseInt(resourceId));
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_OPERATION', message: result.error } });
+  }
+  const recommendedQuestions = generateRecommendedQuestions(result.session);
+  res.json({ ok: true, data: { ...result, recommendedQuestions } });
+}
+
 module.exports = {
   home,
   resources,
@@ -175,4 +212,7 @@ module.exports = {
   settings,
   studyGroups,
   studyGroupDetail,
+  qaIndex,
+  qaSession,
+  qaSessionByResource,
 };

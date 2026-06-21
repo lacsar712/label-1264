@@ -30,6 +30,7 @@ const {
   removeMember,
   transferLeadership,
 } = require('../services/pages/studyGroupService');
+const { sendMessage } = require('../services/qaService');
 
 async function ensureCategoryByCode(categoryId) {
   let category = await ResourceCategory.findOne({ where: { categoryCode: categoryId } });
@@ -862,6 +863,23 @@ async function transferStudyGroupLeader(req, res) {
   return res.json({ ok: true });
 }
 
+async function qaSendMessage(req, res) {
+  const userId = req.user.id;
+  const { sessionId } = req.params;
+  const { content } = req.body;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_PARAM', message: '消息内容不能为空' } });
+  }
+
+  const result = await sendMessage(userId, parseInt(sessionId), content.trim());
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'INVALID_OPERATION', message: result.error } });
+  }
+
+  return res.json({ ok: true, data: result });
+}
+
 module.exports = {
   favorite,
   learn,
@@ -902,4 +920,5 @@ module.exports = {
   leaveStudyGroup,
   removeStudyGroupMember,
   transferStudyGroupLeader,
+  qaSendMessage,
 };

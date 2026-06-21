@@ -332,4 +332,12 @@ router.post(
   asyncHandler(action.transferStudyGroupLeader)
 );
 
+router.post(
+  '/qa/session/:sessionId/send',
+  auth,
+  [body('content').isString().trim().isLength({ min: 1, max: 2000 })],
+  validate,
+  asyncHandler(action.qaSendMessage)
+);
+
 module.exports = router;

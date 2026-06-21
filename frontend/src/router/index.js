@@ -25,6 +25,7 @@ import StudyCalendarPage from '../pages/StudyCalendarPage.vue'
 import SettingsPage from '../pages/SettingsPage.vue'
 import StudyGroupListPage from '../pages/StudyGroupListPage.vue'
 import StudyGroupDetailPage from '../pages/StudyGroupDetailPage.vue'
+import ResourceQAPage from '../pages/ResourceQAPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -56,6 +57,7 @@ const router = createRouter({
         { path: 'calendar', component: StudyCalendarPage },
         { path: 'study-group', component: StudyGroupListPage },
         { path: 'study-group/:groupId', component: StudyGroupDetailPage },
+        { path: 'resource-qa', component: ResourceQAPage },
         { path: 'settings', component: SettingsPage },
       ],
     },

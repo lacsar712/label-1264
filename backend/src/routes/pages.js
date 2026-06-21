@@ -36,4 +36,8 @@ router.get('/settings', auth, asyncHandler(page.settings));
 router.get('/study-groups', auth, asyncHandler(page.studyGroups));
 router.get('/study-groups/:groupId', auth, asyncHandler(page.studyGroupDetail));
 
+router.get('/qa', auth, asyncHandler(page.qaIndex));
+router.get('/qa/session/:sessionId', auth, asyncHandler(page.qaSession));
+router.get('/qa/resource/:resourceId', auth, asyncHandler(page.qaSessionByResource));
+
 module.exports = router;

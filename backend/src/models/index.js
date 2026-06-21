@@ -32,6 +32,8 @@ const ResourceReview = require('./resourceReview')(sequelize, DataTypes);
 const StudyGroup = require('./studyGroup')(sequelize, DataTypes);
 const StudyGroupMember = require('./studyGroupMember')(sequelize, DataTypes);
 const StudyGroupActivity = require('./studyGroupActivity')(sequelize, DataTypes);
+const ChatSession = require('./chatSession')(sequelize, DataTypes);
+const ChatMessage = require('./chatMessage')(sequelize, DataTypes);
 
 User.hasMany(UserTag, { foreignKey: 'userId', as: 'tags' });
 User.hasMany(LearningNote, { foreignKey: 'userId', as: 'learningNotes' });
@@ -126,6 +128,16 @@ StudyGroupActivity.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(StudyGroupMember, { foreignKey: 'userId', as: 'groupMemberships' });
 User.hasMany(StudyGroupActivity, { foreignKey: 'userId', as: 'groupActivities' });
 
+User.hasMany(ChatSession, { foreignKey: 'userId', as: 'chatSessions' });
+ChatSession.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+ChatSession.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' });
+Resource.hasMany(ChatSession, { foreignKey: 'resourceId', as: 'chatSessions' });
+
+ChatSession.hasMany(ChatMessage, { foreignKey: 'sessionId', as: 'messages', onDelete: 'CASCADE' });
+ChatMessage.belongsTo(ChatSession, { foreignKey: 'sessionId', as: 'session' });
+ChatMessage.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(ChatMessage, { foreignKey: 'userId', as: 'chatMessages' });
+
 module.exports = {
   sequelize,
   User,
@@ -158,4 +170,6 @@ module.exports = {
   StudyGroup,
   StudyGroupMember,
   StudyGroupActivity,
+  ChatSession,
+  ChatMessage,
 };

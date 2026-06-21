@@ -21,6 +21,7 @@ import {
   Calendar,
   UserFilled,
   Connection,
+  ChatDotRound,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -103,6 +104,10 @@ onUnmounted(() => {
           <el-menu-item index="/study-group">
             <el-icon><Connection /></el-icon>
             <span>学习小组</span>
+          </el-menu-item>
+          <el-menu-item index="/resource-qa">
+            <el-icon><ChatDotRound /></el-icon>
+            <span>资源问答</span>
           </el-menu-item>
           <el-menu-item :index="isAdmin ? '/admin/notes' : '/notes'">
             <el-icon><Notebook /></el-icon>

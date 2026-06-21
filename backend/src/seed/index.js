@@ -20,6 +20,7 @@ const {
   SystemLog,
   UserBehavior,
   LearningNote,
+  Notification,
 } = require('../models');
 const { logger } = require('../utils/logger');
 const { waitForDb } = require('../utils/waitForDb');
@@ -443,6 +444,73 @@ async function main() {
   }
   await LearningNote.bulkCreate(noteRows, { validate: true });
 
+  const allStudents = [student, ...extraUsers];
+  const notificationSamples = [
+    {
+      type: 'system',
+      title: '系统升级维护通知',
+      content: '为了提供更好的服务，系统将于本周六凌晨2:00-4:00进行升级维护，届时将暂停服务，请提前做好学习安排。',
+      linkUrl: '',
+      linkText: '',
+    },
+    {
+      type: 'system',
+      title: '欢迎使用智能教学资源推荐系统',
+      content: '您好，欢迎使用智能教学资源个性化推荐系统！系统会根据您的学习风格和偏好，为您推荐最合适的学习资源。',
+      linkUrl: '/home',
+      linkText: '立即体验',
+    },
+    {
+      type: 'recommendation',
+      title: '新一批个性化推荐已生成',
+      content: '根据您最近的学习行为和偏好，系统已为您生成了新一批个性化学习资源推荐，快去看看吧！',
+      linkUrl: '/recommendation-analysis',
+      linkText: '查看推荐',
+    },
+    {
+      type: 'recommendation',
+      title: '推荐策略已更新',
+      content: '系统推荐算法已完成优化升级，新版本在推荐准确性和多样性方面均有显著提升。',
+      linkUrl: '/recommendation-analysis',
+      linkText: '查看详情',
+    },
+    {
+      type: 'homework',
+      title: '数学作业提醒',
+      content: '您有新的数学作业待完成，内容为二次函数专项练习，建议在本周日前完成。',
+      linkUrl: '/resources',
+      linkText: '去完成',
+    },
+    {
+      type: 'homework',
+      title: '英语单词打卡提醒',
+      content: '今日英语单词打卡还未完成，坚持每天学习，词汇量稳步提升！',
+      linkUrl: '/resources',
+      linkText: '立即打卡',
+    },
+  ];
+
+  const notificationRows = [];
+  for (const u of allStudents) {
+    const count = 3 + Math.floor(rng() * 3);
+    const picks = sample(rng, notificationSamples, count);
+    picks.forEach((n, idx) => {
+      notificationRows.push({
+        userId: u.id,
+        type: n.type,
+        title: n.title,
+        content: n.content,
+        linkUrl: n.linkUrl || null,
+        linkText: n.linkText || null,
+        isRead: idx >= 2,
+        senderId: admin.id,
+        createdAt: daysAgo(idx),
+        updatedAt: daysAgo(idx),
+      });
+    });
+  }
+  await Notification.bulkCreate(notificationRows, { validate: true });
+
   await SystemLog.create({
     actorUserId: admin.id,
     type: '配置修改',
@@ -457,6 +525,7 @@ async function main() {
     tags: resourceTagRows.length,
     batches: batches.length,
     notes: noteRows.length,
+    notifications: notificationRows.length,
   });
 }
 

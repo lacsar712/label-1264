@@ -14,6 +14,7 @@ import AdminSystemPage from '../pages/admin/AdminSystemPage.vue'
 import NotesPage from '../pages/NotesPage.vue'
 import NoteEditorPage from '../pages/NoteEditorPage.vue'
 import AdminNotesPage from '../pages/admin/AdminNotesPage.vue'
+import AdminNotificationsPage from '../pages/admin/AdminNotificationsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,6 +33,7 @@ const router = createRouter({
         { path: 'admin/resources', component: AdminResourcesPage },
         { path: 'admin/system', component: AdminSystemPage },
         { path: 'admin/notes', component: AdminNotesPage },
+        { path: 'admin/notifications', component: AdminNotificationsPage },
         { path: 'notes', component: NotesPage },
         { path: 'notes/new', component: NoteEditorPage },
         { path: 'notes/:noteId', component: NoteEditorPage },

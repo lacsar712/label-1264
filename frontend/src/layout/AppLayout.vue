@@ -1,7 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElScrollbar } from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElScrollbar, ElBadge } from 'element-plus'
 import {
   DataAnalysis,
   DataBoard,
@@ -12,21 +12,47 @@ import {
   School,
   SwitchButton,
   Notebook,
+  Bell,
+  Message,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
+import NotificationCenter from '../components/NotificationCenter.vue'
 import { useAuth } from '../stores/auth'
+import { useNotification } from '../lib/useNotification'
 
 const route = useRoute()
 const router = useRouter()
 const { state, isAdmin, clearAuth } = useAuth()
+const { unreadCount, fetchUnreadCount } = useNotification()
 
 const active = computed(() => route.path)
+const notificationVisible = ref(false)
+let refreshTimer = null
+
+function toggleNotification() {
+  notificationVisible.value = !notificationVisible.value
+}
 
 function logout() {
   clearAuth()
   router.replace('/login')
 }
+
+onMounted(() => {
+  if (state.token) {
+    fetchUnreadCount()
+    refreshTimer = setInterval(() => {
+      fetchUnreadCount()
+    }, 60000)
+  }
+})
+
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
+})
 </script>
 
 <template>
@@ -81,6 +107,10 @@ function logout() {
               <el-icon><Notebook /></el-icon>
               <span>笔记管理</span>
             </el-menu-item>
+            <el-menu-item index="/admin/notifications">
+              <el-icon><Message /></el-icon>
+              <span>通知管理</span>
+            </el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -93,6 +123,16 @@ function logout() {
           </div>
 
           <div style="display: flex; align-items: center; gap: 12px">
+            <el-button
+              text
+              class="bell-btn"
+              @click="toggleNotification"
+            >
+              <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0" class="bell-badge">
+                <el-icon :size="20"><Bell /></el-icon>
+              </el-badge>
+            </el-button>
+
             <el-dropdown>
               <el-button type="primary" plain>
                 <span style="margin-right: 8px">{{ state.user?.name || '未登录' }}</span>
@@ -117,5 +157,24 @@ function logout() {
         </el-main>
       </el-container>
     </el-container>
+
+    <NotificationCenter v-model:visible="notificationVisible" />
   </div>
 </template>
+
+<style scoped>
+.bell-btn {
+  color: #475569;
+  padding: 6px 8px;
+}
+
+.bell-btn:hover {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.bell-badge :deep(.el-badge__content) {
+  top: 4px;
+  right: 2px;
+}
+</style>

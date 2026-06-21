@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 
 const action = require('../controllers/actionController');
+const notification = require('../controllers/notificationController');
 const { auth, requireAdmin } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { asyncHandler } = require('../utils/asyncHandler');
@@ -170,5 +171,35 @@ router.put(
 );
 
 router.delete('/notes/:noteId', auth, asyncHandler(action.deleteNote));
+
+router.get('/notifications', auth, asyncHandler(notification.getNotifications));
+router.get('/notifications/unread-count', auth, asyncHandler(notification.getUnreadCount));
+router.post('/notifications/:notificationId/read', auth, asyncHandler(notification.markAsRead));
+router.post('/notifications/read-all', auth, asyncHandler(notification.markAllAsRead));
+router.delete('/notifications/:notificationId', auth, asyncHandler(notification.deleteNotification));
+router.delete('/notifications/clear-read', auth, asyncHandler(notification.clearReadNotifications));
+
+router.post(
+  '/admin/notifications/send',
+  auth,
+  requireAdmin,
+  [
+    body('userIds').isArray({ min: 1 }),
+    body('type').optional().isIn(['system', 'recommendation', 'homework']),
+    body('title').isString().trim().isLength({ min: 1, max: 128 }),
+    body('content').isString().trim().isLength({ min: 1 }),
+    body('linkUrl').optional().isString().trim().isLength({ max: 255 }),
+    body('linkText').optional().isString().trim().isLength({ max: 64 }),
+  ],
+  validate,
+  asyncHandler(notification.adminSendNotification)
+);
+
+router.get(
+  '/admin/notifications',
+  auth,
+  requireAdmin,
+  asyncHandler(notification.adminGetNotificationList)
+);
 
 module.exports = router;

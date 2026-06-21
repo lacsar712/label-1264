@@ -15,4 +15,11 @@ router.get('/admin/users', auth, requireAdmin, asyncHandler(page.userAdmin));
 router.get('/admin/resources', auth, requireAdmin, asyncHandler(page.resourceAdmin));
 router.get('/admin/system', auth, requireAdmin, asyncHandler(page.systemConfig));
 
+router.get('/notes', auth, asyncHandler(page.notes));
+router.get('/notes/:noteId', auth, asyncHandler(page.noteDetail));
+router.get('/notes/resources/available', auth, asyncHandler(page.noteResources));
+
+router.get('/admin/notes', auth, requireAdmin, asyncHandler(page.adminNotes));
+router.get('/admin/notes/:noteId', auth, requireAdmin, asyncHandler(page.adminNoteDetail));
+
 module.exports = router;

@@ -143,4 +143,32 @@ router.post(
   asyncHandler(action.adminMergeResourceCategory)
 );
 
+router.post(
+  '/notes',
+  auth,
+  [
+    body('title').optional().isString().trim().isLength({ min: 1, max: 128 }),
+    body('content').optional().isString(),
+    body('subject').isString().trim().isLength({ min: 1, max: 32 }),
+    body('resourceId').optional().isInt({ min: 1 }),
+  ],
+  validate,
+  asyncHandler(action.createNote)
+);
+
+router.put(
+  '/notes/:noteId',
+  auth,
+  [
+    body('title').optional().isString().trim().isLength({ min: 1, max: 128 }),
+    body('content').optional().isString(),
+    body('subject').optional().isString().trim().isLength({ min: 1, max: 32 }),
+    body('resourceId').optional(),
+  ],
+  validate,
+  asyncHandler(action.updateNote)
+);
+
+router.delete('/notes/:noteId', auth, asyncHandler(action.deleteNote));
+
 module.exports = router;

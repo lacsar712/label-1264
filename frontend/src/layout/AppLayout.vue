@@ -11,6 +11,7 @@ import {
   TrendCharts,
   School,
   SwitchButton,
+  Notebook,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -54,6 +55,10 @@ function logout() {
             <el-icon><TrendCharts /></el-icon>
             <span>学习进度</span>
           </el-menu-item>
+          <el-menu-item :index="isAdmin ? '/admin/notes' : '/notes'">
+            <el-icon><Notebook /></el-icon>
+            <span>{{ isAdmin ? '笔记管理' : '学习笔记' }}</span>
+          </el-menu-item>
 
           <el-sub-menu v-if="isAdmin" index="/admin">
             <template #title>
@@ -71,6 +76,10 @@ function logout() {
             <el-menu-item index="/admin/system">
               <el-icon><Setting /></el-icon>
               <span>系统配置</span>
+            </el-menu-item>
+            <el-menu-item index="/admin/notes">
+              <el-icon><Notebook /></el-icon>
+              <span>笔记管理</span>
             </el-menu-item>
           </el-sub-menu>
         </el-menu>

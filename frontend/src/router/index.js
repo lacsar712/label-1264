@@ -11,6 +11,9 @@ import ProgressPage from '../pages/ProgressPage.vue'
 import AdminUsersPage from '../pages/admin/AdminUsersPage.vue'
 import AdminResourcesPage from '../pages/admin/AdminResourcesPage.vue'
 import AdminSystemPage from '../pages/admin/AdminSystemPage.vue'
+import NotesPage from '../pages/NotesPage.vue'
+import NoteEditorPage from '../pages/NoteEditorPage.vue'
+import AdminNotesPage from '../pages/admin/AdminNotesPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,6 +31,10 @@ const router = createRouter({
         { path: 'admin/users', component: AdminUsersPage },
         { path: 'admin/resources', component: AdminResourcesPage },
         { path: 'admin/system', component: AdminSystemPage },
+        { path: 'admin/notes', component: AdminNotesPage },
+        { path: 'notes', component: NotesPage },
+        { path: 'notes/new', component: NoteEditorPage },
+        { path: 'notes/:noteId', component: NoteEditorPage },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
@@ -43,6 +50,9 @@ router.beforeEach((to) => {
   if (!isAuthed.value) return '/login'
 
   if (to.path.startsWith('/admin') && !isAdmin.value) return '/home'
+
+  if (to.path === '/notes/new' && isAdmin.value) return '/admin/notes'
+
   return true
 })
 

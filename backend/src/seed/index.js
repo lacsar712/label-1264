@@ -19,6 +19,7 @@ const {
   SystemParam,
   SystemLog,
   UserBehavior,
+  LearningNote,
 } = require('../models');
 const { logger } = require('../utils/logger');
 const { waitForDb } = require('../utils/waitForDb');
@@ -411,6 +412,37 @@ async function main() {
   await UserResource.bulkCreate(userResourceRows, { validate: true, ignoreDuplicates: true });
   await UserBehavior.bulkCreate(behaviorRows, { validate: true });
 
+  const allStudents = [student, ...extraUsers];
+  const noteSamples = [
+    { title: '二次函数解题技巧总结', subject: '数学', content: '# 二次函数解题技巧\n\n## 一、基本形式\n\n二次函数的一般形式为：\n\n```\ny = ax² + bx + c (a ≠ 0)\n```\n\n## 二、常见题型\n\n1. **求顶点坐标**\n   - 公式法：x = -b/(2a)\n   - 配方法：转化为顶点式\n\n2. **求与坐标轴交点**\n   - 与y轴交点：(0, c)\n   - 与x轴交点：解方程 ax² + bx + c = 0\n\n## 三、注意事项\n\n> 注意判别式 Δ = b² - 4ac 的应用\n\n- Δ > 0：两个不相等实根\n- Δ = 0：一个实根（重根）\n- Δ < 0：无实根' },
+    { title: '英语时态考点梳理', subject: '英语', content: '# 英语时态考点梳理\n\n## 八种基本时态\n\n| 时态 | 结构 | 例句 |\n|------|------|------|\n| 一般现在时 | do/does | He plays football. |\n| 一般过去时 | did | He played football. |\n| 一般将来时 | will do | He will play football. |\n| 现在进行时 | am/is/are doing | He is playing football. |\n\n## 高频考点\n\n**现在完成时 vs 一般过去时**\n\n- 现在完成时：强调对现在的影响\n- 一般过去时：只说明过去发生的事\n\n```js\n// 现在完成时\nhas/have + 过去分词\n\n// 一般过去时  \n动词过去式\n```' },
+    { title: '牛顿运动定律复习', subject: '物理', content: '# 牛顿运动定律复习\n\n## 牛顿第一定律（惯性定律）\n\n**内容**：一切物体总保持匀速直线运动状态或静止状态，直到有外力迫使它改变这种状态为止。\n\n**理解要点**：\n- 揭示了力和运动的关系\n- 说明了任何物体都有惯性\n- 惯性是物体的固有属性，与运动状态无关\n\n## 牛顿第二定律\n\n**公式**：\n\n```\nF = ma\n```\n\n**特性**：\n- 矢量性：加速度方向与合外力方向相同\n- 瞬时性：力和加速度同时产生、同时变化、同时消失\n- 独立性：每个力各自独立产生加速度\n\n## 牛顿第三定律\n\n**内容**：两个物体之间的作用力和反作用力总是大小相等，方向相反，作用在同一条直线上。\n\n**注意**：作用力与反作用力作用在不同物体上，不能相互抵消。' },
+    { title: '化学反应方程式配平方法', subject: '化学', content: '# 化学反应方程式配平方法\n\n## 一、最小公倍数法\n\n**步骤**：\n1. 找出反应式左右两边原子个数最多的元素\n2. 求出最小公倍数\n3. 确定各物质的系数\n\n**示例**：\n\n```\nP + O₂ → P₂O₅\n\nO原子：2和5的最小公倍数是10\nO₂系数：10/2 = 5\nP₂O₅系数：10/5 = 2\n\n最终：4P + 5O₂ = 2P₂O₅\n```\n\n## 二、奇数配偶法\n\n适用于某元素在方程式两边出现次数较多，且原子个数为一奇一偶。\n\n## 三、观察法\n\n从较复杂的物质入手，通过观察分析确定各物质系数。' },
+    { title: '《岳阳楼记》赏析笔记', subject: '语文', content: '# 《岳阳楼记》赏析笔记\n\n## 作者简介\n\n**范仲淹**（989-1052），字希文，北宋政治家、文学家。谥号文正，世称范文正公。\n\n## 文章结构\n\n1. **记叙**：作记缘由\n2. **描写**：岳阳楼大观、阴晴景象\n3. **抒情**：迁客骚人的悲喜之情\n4. **议论**：点明主旨，抒发抱负\n\n## 名句赏析\n\n> **\"先天下之忧而忧，后天下之乐而乐\"**\n\n- 揭示了全文的中心思想\n- 表达了作者远大的政治抱负\n- 体现了儒家\"仁政\"思想\n\n## 写作特色\n\n- **叙事、描写、抒情、议论相结合**\n- **骈散结合**：写景用骈句，议论用散句\n- **对比手法**：\"悲\"与\"喜\"的对比，\"古仁人\"与\"迁客骚人\"的对比' },
+    { title: '细胞分裂过程总结', subject: '生物', content: '# 细胞分裂过程总结\n\n## 有丝分裂\n\n### 间期（G1、S、G2）\n- DNA复制和有关蛋白质合成\n- 染色体数目不变，DNA数目加倍\n\n### 分裂期\n\n1. **前期**：染色质→染色体，核膜核仁消失，纺锤体出现\n2. **中期**：染色体的着丝点排列在赤道板上（观察染色体的最佳时期）\n3. **后期**：着丝点分裂，姐妹染色单体分开，染色体数目加倍\n4. **末期**：染色体→染色质，核膜核仁重现，纺锤体消失\n\n## 减数分裂\n\n### 减数第一次分裂\n- 同源染色体联会形成四分体\n- 同源染色体分离，非同源染色体自由组合\n- 染色体数目减半\n\n### 减数第二次分裂\n- 类似有丝分裂，但无同源染色体\n- 着丝点分裂，姐妹染色单体分开\n\n## 重要知识点\n\n> 有丝分裂：体细胞增殖，子细胞遗传物质与母细胞相同\n> 减数分裂：形成配子，子细胞染色体数目减半' },
+  ];
+
+  const noteRows = [];
+  for (let i = 0; i < 24; i += 1) {
+    const user = pick(rng, allStudents);
+    const sample = pick(rng, noteSamples);
+    const randomResource = pick(rng, resources.filter((r) => r.subject === sample.subject && r.status === '上架'));
+    const now = new Date();
+    const daysOffset = Math.floor(rng() * 30);
+    const noteDate = new Date(now.getTime() - daysOffset * 24 * 60 * 60 * 1000);
+
+    noteRows.push({
+      userId: user.id,
+      title: sample.title,
+      content: sample.content,
+      subject: sample.subject,
+      resourceId: rng() > 0.4 && randomResource ? randomResource.id : null,
+      createdAt: noteDate,
+      updatedAt: new Date(noteDate.getTime() + Math.floor(rng() * 7 * 24 * 60 * 60 * 1000)),
+    });
+  }
+  await LearningNote.bulkCreate(noteRows, { validate: true });
+
   await SystemLog.create({
     actorUserId: admin.id,
     type: '配置修改',
@@ -424,6 +456,7 @@ async function main() {
     resources: resources.length,
     tags: resourceTagRows.length,
     batches: batches.length,
+    notes: noteRows.length,
   });
 }
 

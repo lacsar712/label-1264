@@ -17,8 +17,12 @@ const UserBehavior = require('./userBehavior')(sequelize, DataTypes);
 const RecommendationRule = require('./recommendationRule')(sequelize, DataTypes);
 const SystemParam = require('./systemParam')(sequelize, DataTypes);
 const SystemLog = require('./systemLog')(sequelize, DataTypes);
+const LearningNote = require('./learningNote')(sequelize, DataTypes);
 
 User.hasMany(UserTag, { foreignKey: 'userId', as: 'tags' });
+User.hasMany(LearningNote, { foreignKey: 'userId', as: 'learningNotes' });
+LearningNote.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+LearningNote.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' });
 UserTag.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 Resource.hasMany(ResourceTag, { foreignKey: 'resourceId', as: 'tags' });
@@ -77,4 +81,5 @@ module.exports = {
   RecommendationRule,
   SystemParam,
   SystemLog,
+  LearningNote,
 };

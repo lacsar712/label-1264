@@ -9,6 +9,7 @@ const {
   ResourceCategory,
   SystemLog,
   UserBehavior,
+  LearningNote,
 } =
   require('../models');
 
@@ -425,6 +426,85 @@ async function adminMergeResourceCategory(req, res) {
   return res.json({ ok: true });
 }
 
+async function createNote(req, res) {
+  const userId = req.user.id;
+  const { title, content, subject, resourceId } = req.body;
+
+  const now = new Date();
+  const note = await LearningNote.create({
+    userId,
+    title: title || '无标题笔记',
+    content: content || '',
+    subject,
+    resourceId: resourceId || null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '笔记操作',
+    content: `创建笔记#${note.id} (${note.title})`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true, data: { id: note.id } });
+}
+
+async function updateNote(req, res) {
+  const userId = req.user.id;
+  const { noteId } = req.params;
+
+  const note = await LearningNote.findOne({ where: { id: noteId, userId } });
+  if (!note) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '笔记不存在' } });
+  }
+
+  const patch = {};
+  if (typeof req.body.title === 'string') patch.title = req.body.title;
+  if (typeof req.body.content === 'string') patch.content = req.body.content;
+  if (typeof req.body.subject === 'string') patch.subject = req.body.subject;
+  if (req.body.hasOwnProperty('resourceId')) {
+    patch.resourceId = req.body.resourceId || null;
+  }
+  patch.updatedAt = new Date();
+
+  await note.update(patch);
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '笔记操作',
+    content: `更新笔记#${note.id}`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true });
+}
+
+async function deleteNote(req, res) {
+  const userId = req.user.id;
+  const { noteId } = req.params;
+
+  const note = await LearningNote.findOne({ where: { id: noteId, userId } });
+  if (!note) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '笔记不存在' } });
+  }
+
+  await note.destroy();
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '笔记操作',
+    content: `删除笔记#${noteId} (${note.title})`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true });
+}
+
 module.exports = {
   favorite,
   learn,
@@ -445,4 +525,7 @@ module.exports = {
   adminCreateResourceCategory,
   adminUpdateResourceCategory,
   adminMergeResourceCategory,
+  createNote,
+  updateNote,
+  deleteNote,
 };

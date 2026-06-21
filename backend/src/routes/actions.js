@@ -291,4 +291,45 @@ router.put(
   asyncHandler(action.updateAdminPreferences)
 );
 
+router.post(
+  '/study-groups/create',
+  auth,
+  [
+    body('name').isString().trim().isLength({ min: 1, max: 64 }),
+    body('maxMembers').optional().isInt({ min: 2, max: 50 }),
+  ],
+  validate,
+  asyncHandler(action.createStudyGroup)
+);
+
+router.post(
+  '/study-groups/join',
+  auth,
+  [body('inviteCode').isString().trim().isLength({ min: 1, max: 8 })],
+  validate,
+  asyncHandler(action.joinStudyGroup)
+);
+
+router.post(
+  '/study-groups/:groupId/leave',
+  auth,
+  asyncHandler(action.leaveStudyGroup)
+);
+
+router.post(
+  '/study-groups/:groupId/remove-member',
+  auth,
+  [body('targetUserId').isInt()],
+  validate,
+  asyncHandler(action.removeStudyGroupMember)
+);
+
+router.post(
+  '/study-groups/:groupId/transfer-leader',
+  auth,
+  [body('targetUserId').isInt()],
+  validate,
+  asyncHandler(action.transferStudyGroupLeader)
+);
+
 module.exports = router;

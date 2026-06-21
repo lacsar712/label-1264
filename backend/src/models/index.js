@@ -29,6 +29,9 @@ const Question = require('./question')(sequelize, DataTypes);
 const Quiz = require('./quiz')(sequelize, DataTypes);
 const QuizQuestion = require('./quizQuestion')(sequelize, DataTypes);
 const ResourceReview = require('./resourceReview')(sequelize, DataTypes);
+const StudyGroup = require('./studyGroup')(sequelize, DataTypes);
+const StudyGroupMember = require('./studyGroupMember')(sequelize, DataTypes);
+const StudyGroupActivity = require('./studyGroupActivity')(sequelize, DataTypes);
 
 User.hasMany(UserTag, { foreignKey: 'userId', as: 'tags' });
 User.hasMany(LearningNote, { foreignKey: 'userId', as: 'learningNotes' });
@@ -112,6 +115,17 @@ ResourceReview.belongsTo(Resource, { foreignKey: 'resourceId', as: 'resource' })
 User.hasMany(ResourceReview, { foreignKey: 'userId', as: 'resourceReviews' });
 ResourceReview.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+StudyGroup.hasMany(StudyGroupMember, { foreignKey: 'groupId', as: 'members' });
+StudyGroupMember.belongsTo(StudyGroup, { foreignKey: 'groupId', as: 'group' });
+StudyGroupMember.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+StudyGroup.hasMany(StudyGroupActivity, { foreignKey: 'groupId', as: 'activities' });
+StudyGroupActivity.belongsTo(StudyGroup, { foreignKey: 'groupId', as: 'group' });
+StudyGroupActivity.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+User.hasMany(StudyGroupMember, { foreignKey: 'userId', as: 'groupMemberships' });
+User.hasMany(StudyGroupActivity, { foreignKey: 'userId', as: 'groupActivities' });
+
 module.exports = {
   sequelize,
   User,
@@ -141,4 +155,7 @@ module.exports = {
   Quiz,
   QuizQuestion,
   ResourceReview,
+  StudyGroup,
+  StudyGroupMember,
+  StudyGroupActivity,
 };

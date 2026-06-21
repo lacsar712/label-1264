@@ -33,5 +33,7 @@ router.get('/quiz/:quizId', auth, asyncHandler(page.quizDetail));
 router.get('/calendar/month', auth, asyncHandler(page.calendarMonth));
 router.get('/calendar/day', auth, asyncHandler(page.calendarDay));
 router.get('/settings', auth, asyncHandler(page.settings));
+router.get('/study-groups', auth, asyncHandler(page.studyGroups));
+router.get('/study-groups/:groupId', auth, asyncHandler(page.studyGroupDetail));
 
 module.exports = router;

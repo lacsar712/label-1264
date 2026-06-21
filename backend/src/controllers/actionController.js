@@ -23,6 +23,13 @@ const {
   getUserReview,
   createOrUpdateReview,
 } = require('../services/resourceReviewService');
+const {
+  createGroup,
+  joinGroup,
+  leaveGroup,
+  removeMember,
+  transferLeadership,
+} = require('../services/pages/studyGroupService');
 
 async function ensureCategoryByCode(categoryId) {
   let category = await ResourceCategory.findOne({ where: { categoryCode: categoryId } });
@@ -781,6 +788,80 @@ async function updateAdminPreferences(req, res) {
   return res.json({ ok: true, data: patch });
 }
 
+async function createStudyGroup(req, res) {
+  const userId = req.user.id;
+  const { name, maxMembers } = req.body;
+
+  const result = await createGroup(userId, name, maxMembers);
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '学习小组',
+    content: `创建小组 ${result.name}`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true, data: result });
+}
+
+async function joinStudyGroup(req, res) {
+  const userId = req.user.id;
+  const { inviteCode } = req.body;
+
+  const result = await joinGroup(userId, inviteCode);
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'JOIN_FAIL', message: result.error } });
+  }
+
+  await SystemLog.create({
+    actorUserId: userId,
+    type: '学习小组',
+    content: `加入小组 ${result.name}`,
+    ip: req.ip || '',
+    status: '成功',
+  });
+
+  return res.json({ ok: true, data: result });
+}
+
+async function leaveStudyGroup(req, res) {
+  const userId = req.user.id;
+  const { groupId } = req.params;
+
+  const result = await leaveGroup(userId, parseInt(groupId));
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'LEAVE_FAIL', message: result.error } });
+  }
+
+  return res.json({ ok: true });
+}
+
+async function removeStudyGroupMember(req, res) {
+  const userId = req.user.id;
+  const { groupId } = req.params;
+  const { targetUserId } = req.body;
+
+  const result = await removeMember(userId, parseInt(groupId), parseInt(targetUserId));
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'REMOVE_FAIL', message: result.error } });
+  }
+
+  return res.json({ ok: true });
+}
+
+async function transferStudyGroupLeader(req, res) {
+  const userId = req.user.id;
+  const { groupId } = req.params;
+  const { targetUserId } = req.body;
+
+  const result = await transferLeadership(userId, parseInt(groupId), parseInt(targetUserId));
+  if (result.error) {
+    return res.status(400).json({ ok: false, error: { code: 'TRANSFER_FAIL', message: result.error } });
+  }
+
+  return res.json({ ok: true });
+}
+
 module.exports = {
   favorite,
   learn,
@@ -816,4 +897,9 @@ module.exports = {
   updateProfile,
   changePassword,
   updateAdminPreferences,
+  createStudyGroup,
+  joinStudyGroup,
+  leaveStudyGroup,
+  removeStudyGroupMember,
+  transferStudyGroupLeader,
 };

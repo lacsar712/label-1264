@@ -20,6 +20,7 @@ import {
   Trophy,
   Calendar,
   UserFilled,
+  Connection,
 } from '@element-plus/icons-vue'
 
 import ErrorBoundary from '../components/ErrorBoundary.vue'
@@ -98,6 +99,10 @@ onUnmounted(() => {
           <el-menu-item index="/leaderboard">
             <el-icon><Trophy /></el-icon>
             <span>学习排行榜</span>
+          </el-menu-item>
+          <el-menu-item index="/study-group">
+            <el-icon><Connection /></el-icon>
+            <span>学习小组</span>
           </el-menu-item>
           <el-menu-item :index="isAdmin ? '/admin/notes' : '/notes'">
             <el-icon><Notebook /></el-icon>

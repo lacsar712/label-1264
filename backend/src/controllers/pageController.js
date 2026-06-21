@@ -9,6 +9,7 @@ const { getNotesData, getAdminNotesData, getNoteDetail, getAdminNoteDetail, getA
 const { getLearningPathSummary, getFullLearningPath } = require('../services/pages/learningPathService');
 const { getMonthCalendarData, getDayDetailData } = require('../services/pages/calendarService');
 const { getSettingsData } = require('../services/pages/settingsService');
+const { getUserGroups, getGroupDetail } = require('../services/pages/studyGroupService');
 const {
   SUBJECTS,
   DIFFICULTIES,
@@ -136,6 +137,20 @@ async function settings(req, res) {
   res.json({ ok: true, data });
 }
 
+async function studyGroups(req, res) {
+  const groups = await getUserGroups(req.user.id);
+  res.json({ ok: true, data: groups });
+}
+
+async function studyGroupDetail(req, res) {
+  const { groupId } = req.params;
+  const data = await getGroupDetail(req.user.id, parseInt(groupId));
+  if (!data) {
+    return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: '无权查看该小组' } });
+  }
+  res.json({ ok: true, data });
+}
+
 module.exports = {
   home,
   resources,
@@ -158,4 +173,6 @@ module.exports = {
   calendarMonth,
   calendarDay,
   settings,
+  studyGroups,
+  studyGroupDetail,
 };

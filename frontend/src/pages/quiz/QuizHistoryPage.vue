@@ -40,6 +40,7 @@ const summaryLoading = ref(false)
 const history = ref({ total: 0, list: [] })
 const summary = ref(null)
 const subjectFilter = ref('')
+const statusFilter = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
@@ -68,6 +69,7 @@ async function loadHistory() {
     const res = await api.get('/pages/quiz/history', {
       params: {
         subject: subjectFilter.value || undefined,
+        status: statusFilter.value || undefined,
         limit: pageSize.value,
         offset: (page.value - 1) * pageSize.value,
       },
@@ -94,15 +96,25 @@ function onSubjectChange() {
   loadHistory()
 }
 
+function onStatusChange() {
+  page.value = 1
+  loadHistory()
+}
+
 function goToResult(row) {
   router.push(`/quiz/result/${row.id}`)
 }
 
 function getScoreColor(row) {
+  if (row.status === '草稿') return '#64748b'
   return row.totalScore && row.score / row.totalScore >= 0.6 ? GREEN_600 : RED_600
 }
 
 function goToTake(row) {
+  router.push(`/quiz/take/${row.id}`)
+}
+
+function goContinueTake(row) {
   router.push(`/quiz/take/${row.id}`)
 }
 
@@ -267,7 +279,7 @@ function accTag(v) {
     </ElRow>
 
     <ElRow :gutter="16" style="margin-top: 16px">
-      <ElCol :xs="24" :sm="12" :lg="6">
+      <ElCol :xs="24" :sm="12" :md="8">
         <ElCard style="border-radius: 14px" shadow="never">
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px">
             <el-icon style="color: #6366f1"><Trophy /></el-icon>
@@ -279,7 +291,33 @@ function accTag(v) {
           </div>
         </ElCard>
       </ElCol>
-      <ElCol :xs="24" :sm="12" :lg="6">
+      <ElCol :xs="24" :sm="12" :md="8">
+        <ElCard
+          style="border-radius: 14px; border: 1px solid #fde68a; background: #fffbeb"
+          shadow="never"
+          v-if="summary?.inProgressCount"
+          @click="() => { statusFilter = '草稿'; onStatusChange() }"
+        >
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; cursor: pointer">
+            <el-icon style="color: #f59e0b"><View /></el-icon>
+            <div style="font-size: 13px; color: #92400e">进行中</div>
+          </div>
+          <div style="font-weight: 800; font-size: 28px; color: #b45309">
+            {{ summary?.inProgressCount || 0 }}
+            <span style="font-size: 14px; color: #b45309; font-weight: 400; opacity: 0.75">份</span>
+          </div>
+        </ElCard>
+        <ElCard style="border-radius: 14px" shadow="never" v-else>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px">
+            <el-icon style="color: #94a3b8"><View /></el-icon>
+            <div style="font-size: 13px; color: #64748b">进行中</div>
+          </div>
+          <div style="font-weight: 800; font-size: 28px; color: #1e293b">
+            0<span style="font-size: 14px; color: #94a3b8; font-weight: 400">份</span>
+          </div>
+        </ElCard>
+      </ElCol>
+      <ElCol :xs="24" :sm="12" :md="8">
         <ElCard style="border-radius: 14px" shadow="never">
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px">
             <el-icon style="color: #16a34a"><TrendCharts /></el-icon>
@@ -291,7 +329,7 @@ function accTag(v) {
           </div>
         </ElCard>
       </ElCol>
-      <ElCol :xs="24" :sm="12" :lg="6">
+      <ElCol :xs="24" :sm="12" :md="8">
         <ElCard style="border-radius: 14px" shadow="never">
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px">
             <el-icon style="color: #0ea5e9"><Document /></el-icon>
@@ -300,18 +338,6 @@ function accTag(v) {
           <div style="font-weight: 800; font-size: 28px; color: #1e293b">
             {{ summary?.subjectSummary?.length || 0 }}
             <span style="font-size: 14px; color: #94a3b8; font-weight: 400">科</span>
-          </div>
-        </ElCard>
-      </ElCol>
-      <ElCol :xs="24" :sm="12" :lg="6">
-        <ElCard style="border-radius: 14px" shadow="never">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px">
-            <el-icon style="color: #f59e0b"><View /></el-icon>
-            <div style="font-size: 13px; color: #64748b">成绩曲线样本</div>
-          </div>
-          <div style="font-weight: 800; font-size: 28px; color: #1e293b">
-            {{ summary?.scoreCurve?.length || 0 }}
-            <span style="font-size: 14px; color: #94a3b8; font-weight: 400">个</span>
           </div>
         </ElCard>
       </ElCol>
@@ -390,7 +416,18 @@ function accTag(v) {
               答卷列表
             </div>
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
-              <span style="font-size: 13px; color: #64748b">学科过滤：</span>
+              <span style="font-size: 13px; color: #64748b">状态：</span>
+              <ElSelect
+                v-model="statusFilter"
+                placeholder="全部状态"
+                clearable
+                style="width: 130px"
+                @change="onStatusChange"
+              >
+                <ElOption label="进行中" value="草稿" />
+                <ElOption label="已交卷" value="已提交" />
+              </ElSelect>
+              <span style="font-size: 13px; color: #64748b; margin-left: 4px">学科：</span>
               <ElSelect
                 v-model="subjectFilter"
                 placeholder="全部学科"
@@ -412,6 +449,12 @@ function accTag(v) {
                     {{ (page - 1) * pageSize + $index + 1 }}
                   </template>
                 </ElTableColumn>
+                <ElTableColumn label="状态" width="80" align="center">
+                  <template #default="{ row }">
+                    <ElTag v-if="row.status === '草稿'" type="warning" effect="dark">进行中</ElTag>
+                    <ElTag v-else type="success" effect="plain">已交卷</ElTag>
+                  </template>
+                </ElTableColumn>
                 <ElTableColumn prop="subject" label="学科" width="70">
                   <template #default="{ row }">
                     <ElTag type="primary" effect="plain">{{ row.subject }}</ElTag>
@@ -428,9 +471,13 @@ function accTag(v) {
                   </template>
                 </ElTableColumn>
                 <ElTableColumn label="题目数" width="70" align="center" prop="questionCount" />
-                <ElTableColumn label="得分" width="120" align="center">
+                <ElTableColumn label="进度/得分" width="140" align="center">
                   <template #default="{ row }">
-                    <div style="font-weight: 700">
+                    <div v-if="row.status === '草稿'" style="font-weight: 600">
+                      <span style="color: #b45309">已答 {{ row.answeredCount || 0 }}</span>
+                      <span style="color: #94a3b8"> / {{ row.questionCount }} 题</span>
+                    </div>
+                    <div v-else style="font-weight: 700">
                       <span :style="{ color: getScoreColor(row) }">
                         {{ row.score || 0 }}
                       </span>
@@ -440,14 +487,23 @@ function accTag(v) {
                 </ElTableColumn>
                 <ElTableColumn label="正确率" width="100" align="center">
                   <template #default="{ row }">
-                    <ElTag :type="accTag(row.accuracy).type" effect="light">
-                      {{ (row.accuracy * 100).toFixed(0) }}%
-                    </ElTag>
+                    <template v-if="row.accuracy !== null && row.accuracy !== undefined">
+                      <ElTag :type="accTag(row.accuracy).type" effect="light">
+                        {{ (row.accuracy * 100).toFixed(0) }}%
+                      </ElTag>
+                    </template>
+                    <span v-else style="color: #94a3b8; font-size: 12px">-</span>
                   </template>
                 </ElTableColumn>
                 <ElTableColumn label="用时" width="90" align="center">
                   <template #default="{ row }">
-                    {{ formatTime(row.timeSpentSeconds || 0) }}
+                    <template v-if="row.status === '草稿' && row.timeSpentSeconds">
+                      {{ formatTime(row.timeSpentSeconds) }}
+                    </template>
+                    <template v-else-if="row.status === '已提交'">
+                      {{ formatTime(row.timeSpentSeconds || 0) }}
+                    </template>
+                    <span v-else style="color: #94a3b8; font-size: 12px">-</span>
                   </template>
                 </ElTableColumn>
                 <ElTableColumn label="类型" width="90" align="center">
@@ -456,16 +512,32 @@ function accTag(v) {
                     <ElTag v-else type="info" effect="plain">随机</ElTag>
                   </template>
                 </ElTableColumn>
-                <ElTableColumn label="提交时间" min-width="150" prop="submittedAt" />
+                <ElTableColumn label="时间" min-width="150">
+                  <template #default="{ row }">
+                    <div v-if="row.status === '草稿'" style="font-size: 12px; color: #64748b">
+                      开始于 {{ row.startedAt }}
+                    </div>
+                    <div v-else style="font-size: 12px; color: #1e293b">
+                      {{ row.submittedAt }}
+                    </div>
+                  </template>
+                </ElTableColumn>
                 <ElTableColumn label="操作" width="180" fixed="right" align="center">
                   <template #default="{ row }">
                     <div style="display: flex; gap: 6px; justify-content: center">
-                      <ElButton size="small" type="primary" link @click="goToResult(row)">
-                        查看成绩
-                      </ElButton>
-                      <ElButton size="small" link @click="goToTake(row)">
-                        回看答题
-                      </ElButton>
+                      <template v-if="row.status === '草稿'">
+                        <ElButton size="small" type="warning" link @click="goContinueTake(row)">
+                          继续作答
+                        </ElButton>
+                      </template>
+                      <template v-else>
+                        <ElButton size="small" type="primary" link @click="goToResult(row)">
+                          查看成绩
+                        </ElButton>
+                        <ElButton size="small" link @click="goToTake(row)">
+                          回看答题
+                        </ElButton>
+                      </template>
                     </div>
                   </template>
                 </ElTableColumn>

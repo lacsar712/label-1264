@@ -115,10 +115,11 @@ async function quizDetail(req, res) {
 }
 
 async function quizHistory(req, res) {
-  const { subject, limit, offset } = req.query;
+  const { subject, status, limit, offset } = req.query;
   const data = await getQuizHistory({
     userId: req.user.id,
     subject,
+    status: status || undefined,
     limit: parseInt(limit) || 20,
     offset: parseInt(offset) || 0,
   });

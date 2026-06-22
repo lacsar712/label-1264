@@ -159,13 +159,15 @@ async function getQuizDetail({ userId, quizId }) {
 
   const questions = (quiz.quizQuestions || []).map((qq) => {
     const base = formatQuestion(qq.question);
+    const answered = !!qq.userAnswer;
+    const reveal = quiz.status === '已提交' || answered;
     return {
       ...base,
       userAnswer: qq.userAnswer,
-      isCorrect: qq.isCorrect,
+      isCorrect: reveal ? qq.isCorrect : undefined,
       quizQuestionId: qq.id,
-      correctAnswer: quiz.status === '已提交' ? qq.question.correctAnswer : undefined,
-      analysis: quiz.status === '已提交' ? qq.question.analysis : undefined,
+      correctAnswer: reveal ? qq.question.correctAnswer : undefined,
+      analysis: reveal ? qq.question.analysis : undefined,
     };
   });
 
@@ -287,16 +289,34 @@ async function submitQuiz({ userId, quizId, timeSpentSeconds }) {
   return { ok: true, result: detail };
 }
 
-async function getQuizHistory({ userId, subject, limit = 20, offset = 0 }) {
-  const where = { userId, status: '已提交' };
+async function getQuizHistory({ userId, subject, status, limit = 20, offset = 0 }) {
+  const where = { userId };
   if (subject) where.subject = subject;
+  if (status) where.status = status;
 
   const { count, rows } = await Quiz.findAndCountAll({
     where,
-    order: [['submittedAt', 'DESC']],
+    order: [
+      [sequelize.literal("CASE WHEN status = '草稿' THEN 0 ELSE 1 END"), 'ASC'],
+      [sequelize.literal("COALESCE(submitted_at, started_at)"), 'DESC'],
+    ],
     limit,
     offset,
   });
+
+  const draftIds = rows.filter((q) => q.status === '草稿').map((q) => q.id);
+  const answeredCountMap = {};
+  if (draftIds.length) {
+    const counted = await QuizQuestion.findAll({
+      where: { quizId: { [Op.in]: draftIds }, userAnswer: { [Op.ne]: null } },
+      attributes: ['quizId', [sequelize.fn('COUNT', sequelize.col('id')), 'cnt']],
+      group: ['quizId'],
+      raw: true,
+    });
+    for (const c of counted) {
+      answeredCountMap[c.quizId] = Number(c.cnt);
+    }
+  }
 
   return {
     total: count,
@@ -309,9 +329,12 @@ async function getQuizHistory({ userId, subject, limit = 20, offset = 0 }) {
       totalScore: q.totalScore,
       score: q.score,
       correctCount: q.correctCount,
-      accuracy: q.questionCount ? Number(q.correctCount) / Number(q.questionCount) : 0,
+      answeredCount: q.status === '草稿' ? (answeredCountMap[q.id] || 0) : null,
+      accuracy: q.questionCount && q.status === '已提交' ? Number(q.correctCount) / Number(q.questionCount) : null,
       timeSpentSeconds: q.timeSpentSeconds,
       sourceType: q.sourceType,
+      status: q.status,
+      startedAt: q.startedAt,
       submittedAt: q.submittedAt,
     })),
   };
@@ -323,6 +346,26 @@ async function getRecentQuizSummary({ userId }) {
     order: [['submittedAt', 'DESC']],
     limit: 5,
   });
+
+  const inProgress = await Quiz.findAll({
+    where: { userId, status: '草稿' },
+    order: [['startedAt', 'DESC']],
+    limit: 5,
+  });
+
+  const inProgressIds = inProgress.map((q) => q.id);
+  const answeredCountMap = {};
+  if (inProgressIds.length) {
+    const counted = await QuizQuestion.findAll({
+      where: { quizId: { [Op.in]: inProgressIds }, userAnswer: { [Op.ne]: null } },
+      attributes: ['quizId', [sequelize.fn('COUNT', sequelize.col('id')), 'cnt']],
+      group: ['quizId'],
+      raw: true,
+    });
+    for (const c of counted) {
+      answeredCountMap[c.quizId] = Number(c.cnt);
+    }
+  }
 
   const bySubject = SUBJECTS.reduce((acc, s) => {
     acc[s] = { subject: s, count: 0, totalScore: 0, earnedScore: 0 };
@@ -366,6 +409,16 @@ async function getRecentQuizSummary({ userId }) {
       scoreRate: q.totalScore ? (Number(q.score) / Number(q.totalScore) * 100).toFixed(1) : 0,
     })),
     totalCount: (await Quiz.count({ where: { userId, status: '已提交' } })),
+    inProgress: inProgress.map((q) => ({
+      id: q.id,
+      subject: q.subject,
+      difficulty: q.difficulty,
+      questionCount: q.questionCount,
+      answeredCount: answeredCountMap[q.id] || 0,
+      startedAt: q.startedAt,
+      sourceType: q.sourceType,
+    })),
+    inProgressCount: inProgress.length,
   };
 }
 

@@ -94,12 +94,28 @@ async function loadQuiz() {
     const res = await api.get(`/pages/quiz/${quizId.value}`)
     if (res.data.ok) {
       quiz.value = res.data.data
+      const restored = {}
+      for (const q of (quiz.value.questions || [])) {
+        if (q.userAnswer && q.isCorrect !== undefined) {
+          restored[q.id] = true
+        }
+      }
+      answerLockedMap.value = restored
       if (quiz.value.status === '已提交' && quiz.value.timeSpentSeconds) {
         timeSpent.value = quiz.value.timeSpentSeconds
       }
       if (quiz.value.startedAt && !isSubmitted.value) {
         const elapsed = Math.floor((Date.now() - new Date(quiz.value.startedAt).getTime()) / 1000)
         timeSpent.value = Math.max(0, Math.min(elapsed, 86400))
+      }
+      const cq = currentQuestion.value
+      if (cq && answerLockedMap.value[cq.id]) {
+        feedbackResult.value = {
+          isCorrect: cq.isCorrect,
+          correctAnswer: cq.correctAnswer,
+          analysis: cq.analysis,
+        }
+        feedbackVisible.value = true
       }
     } else {
       ElMessage.error(res.data.error?.message || '加载失败')
@@ -162,34 +178,37 @@ async function selectAnswer(option) {
   }
 }
 
+function restoreFeedback(q) {
+  if (q && answerLockedMap.value[q.id]) {
+    feedbackResult.value = {
+      isCorrect: q.isCorrect,
+      correctAnswer: q.correctAnswer,
+      analysis: q.analysis,
+    }
+    feedbackVisible.value = true
+  } else {
+    feedbackVisible.value = false
+    feedbackResult.value = null
+  }
+}
+
 function goPrev() {
   if (currentIndex.value > 0) {
     currentIndex.value -= 1
-    const q = currentQuestion.value
-    if (q && answerLockedMap.value[q.id]) {
-      feedbackVisible.value = true
-    }
+    restoreFeedback(currentQuestion.value)
   }
 }
 
 function goNext() {
   if (currentIndex.value < quiz.value.questions.length - 1) {
     currentIndex.value += 1
-    const q = currentQuestion.value
-    if (q && answerLockedMap.value[q.id]) {
-      feedbackVisible.value = true
-    }
+    restoreFeedback(currentQuestion.value)
   }
 }
 
 function goTo(idx) {
   currentIndex.value = idx
-  const q = currentQuestion.value
-  if (q && answerLockedMap.value[q.id]) {
-    feedbackVisible.value = true
-  } else {
-    feedbackVisible.value = false
-  }
+  restoreFeedback(currentQuestion.value)
 }
 
 async function submitQuiz() {

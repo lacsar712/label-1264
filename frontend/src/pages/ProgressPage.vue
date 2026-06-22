@@ -159,6 +159,10 @@ function goQuizResult(row) {
   router.push(`/quiz/result/${row.id}`)
 }
 
+function goContinueQuiz(row) {
+  router.push(`/quiz/take/${row.id}`)
+}
+
 function goCalendar() {
   router.push('/calendar')
 }
@@ -221,6 +225,14 @@ function diffColor(d) {
                     <ElTag effect="dark" style="background: rgba(255,255,255,0.25); border: none; color: white">
                       累计 {{ quizSummary?.totalCount || 0 }} 份答卷
                     </ElTag>
+                    <ElTag
+                      v-if="quizSummary?.inProgressCount"
+                      effect="dark"
+                      style="background: #f59e0b; border: none; color: white; cursor: pointer"
+                      @click.stop="goQuizHistory"
+                    >
+                      进行中 {{ quizSummary.inProgressCount }} 份 ➜
+                    </ElTag>
                   </div>
                   <div style="font-size: 13px; opacity: 0.92; margin-top: 4px">
                     一键回看历次成绩曲线与错题回顾
@@ -236,6 +248,56 @@ function diffColor(d) {
             <ElSkeleton :loading="quizSummaryLoading" animated style="margin-top: 16px">
               <ElRow :gutter="12" style="margin-top: 8px">
                 <ElCol :xs="24" :md="15">
+                  <div v-if="quizSummary?.inProgress?.length" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px">
+                    <div style="font-weight: 600; font-size: 12px; opacity: 0.9; display: flex; align-items: center; gap: 4px">
+                      <span style="display: inline-block; width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; animation: pulse 1.4s infinite"></span>
+                      进行中（点击继续作答）
+                    </div>
+                    <div
+                      v-for="(r, idx) in quizSummary.inProgress.slice(0, 3)"
+                      :key="'ip-' + idx"
+                      style="padding: 10px 14px; background: rgba(245, 158, 11, 0.35); border: 1px solid rgba(255,255,255,0.35); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px"
+                      @click.stop="goContinueQuiz(r)"
+                    >
+                      <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1">
+                        <div
+                          style="
+                            width: 32;
+                            height: 32px;
+                            border-radius: 8px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: rgba(255,255,255,0.4);
+                            color: #78350f;
+                            fontWeight: 700;
+                            fontSize: 13px;
+                            flexShrink: 0;
+                          "
+                        >
+                          {{ r.subject.slice(0, 1) }}
+                        </div>
+                        <div style="min-width: 0; flex: 1">
+                          <div style="font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                            <span>{{ r.subject }}</span>
+                            <span style="font-size: 12px; opacity: 0.9; padding: 1px 8px; background: rgba(255,255,255,0.25); border-radius: 10px">
+                              {{ r.difficulty }}
+                            </span>
+                            <ElTag v-if="r.sourceType === '错题再练'" effect="dark" style="background: #ef4444; border: none; padding: 0 6px; height: 20px; line-height: 20px">错题再练</ElTag>
+                          </div>
+                          <div style="font-size: 12px; opacity: 0.85; margin-top: 2px">
+                            开始于 {{ r.startedAt }}
+                          </div>
+                        </div>
+                      </div>
+                      <div style="text-align: right; flex-shrink: 0">
+                        <div style="font-weight: 800; font-size: 16px; color: #78350f">
+                          {{ r.answeredCount }}/{{ r.questionCount }}
+                        </div>
+                        <div style="font-size: 12px; opacity: 0.85; margin-top: 1px; color: #78350f">继续作答 →</div>
+                      </div>
+                    </div>
+                  </div>
                   <div v-if="quizSummary?.recent?.length" style="display: flex; flex-direction: column; gap: 8px">
                     <div
                       v-for="(r, idx) in quizSummary.recent.slice(0, 3)"
@@ -455,5 +517,10 @@ function diffColor(d) {
 .quiz-summary-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(139, 92, 246, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
 }
 </style>

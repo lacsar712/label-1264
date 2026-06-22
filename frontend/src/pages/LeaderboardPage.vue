@@ -125,12 +125,11 @@ const mockLeaderboardData = {
 async function fetchLeaderboard() {
   loading.value = true
   try {
-    const res = await api.get('/pages/leaderboard')
+    const res = await api.get('/pages/leaderboard', { _skipErrorHandler: true })
     if (res.data.ok) {
       leaderboardData.value = res.data.data
     }
   } catch (e) {
-    console.error(e)
     leaderboardData.value = mockLeaderboardData
   } finally {
     loading.value = false

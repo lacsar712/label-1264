@@ -30,12 +30,14 @@ api.interceptors.response.use(
       return Promise.reject(err)
     }
 
-    ElNotification({
-      title: '请求失败',
-      message,
-      type: 'error',
-      duration: 2500,
-    })
+    if (!err?.config?._skipErrorHandler) {
+      ElNotification({
+        title: '请求失败',
+        message,
+        type: 'error',
+        duration: 2500,
+      })
+    }
 
     return Promise.reject(err)
   }

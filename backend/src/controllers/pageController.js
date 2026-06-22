@@ -10,6 +10,7 @@ const { getLearningPathSummary, getFullLearningPath } = require('../services/pag
 const { getMonthCalendarData, getDayDetailData } = require('../services/pages/calendarService');
 const { getSettingsData } = require('../services/pages/settingsService');
 const { getUserGroups, getGroupDetail } = require('../services/pages/studyGroupService');
+const { getLeaderboardData } = require('../services/pages/leaderboardService');
 const {
   SUBJECTS,
   DIFFICULTIES,
@@ -196,6 +197,14 @@ async function qaSessionByResource(req, res) {
   res.json({ ok: true, data: { ...result, recommendedQuestions } });
 }
 
+async function leaderboard(req, res) {
+  const data = await getLeaderboardData(req.user.id);
+  if (!data) {
+    return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: '用户不存在' } });
+  }
+  res.json({ ok: true, data });
+}
+
 module.exports = {
   home,
   resources,
@@ -223,4 +232,5 @@ module.exports = {
   qaIndex,
   qaSession,
   qaSessionByResource,
+  leaderboard,
 };

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import {
   ElButton,
   ElCard,
@@ -22,6 +22,7 @@ import RatingDisplay from '../components/RatingDisplay.vue'
 import ReviewDialog from '../components/ReviewDialog.vue'
 import { api } from '../lib/api'
 import { usePageData } from '../lib/usePageData'
+import { useAuth } from '../stores/auth'
 import {
   BORDER_SLATE,
   GREEN_50,
@@ -35,6 +36,7 @@ import {
   SLATE_800,
 } from '../lib/themeColors'
 
+const { state } = useAuth()
 const { data, loading, refresh } = usePageData('/pages/resources')
 
 const stackedOption = computed(() => {
@@ -111,7 +113,7 @@ const favoriteTrendOption = computed(() => ({
 }))
 
 const keyword = ref('')
-const subject = ref('')
+const subject = ref([])
 const difficulty = ref('')
 const sortField = ref('updatedAt')
 const sortOrder = ref('desc')
@@ -125,7 +127,8 @@ const filteredSearchTable = computed(() => {
   const rows = data.value?.searchTable || []
   const kw = keyword.value.trim().toLowerCase()
   return rows.filter((r) => {
-    if (subject.value && r.subject !== subject.value) return false
+    if (Array.isArray(subject.value) && subject.value.length > 0 && !subject.value.includes(r.subject)) return false
+    if (subject.value && typeof subject.value === 'string' && subject.value && r.subject !== subject.value) return false
     if (difficulty.value && r.difficulty !== difficulty.value) return false
     if (!kw) return true
     return String(r.resourceId).toLowerCase().includes(kw) || String(r.name).toLowerCase().includes(kw)
@@ -257,6 +260,13 @@ function getDistributionBars(distribution) {
 const topRatedList = computed(() => {
   return (data.value?.topRatedResources || []).slice(0, 8)
 })
+
+onMounted(() => {
+  const pref = state.user?.subjectPreference
+  if (Array.isArray(pref) && pref.length > 0) {
+    subject.value = pref.slice()
+  }
+})
 </script>
 
 <template>
@@ -290,7 +300,7 @@ const topRatedList = computed(() => {
             <div style="font-weight: 700">筛选结果表</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end">
               <ElInput v-model="keyword" placeholder="搜索资源ID/名称" style="width: 160px" />
-              <ElSelect v-model="subject" placeholder="学科" clearable style="width: 110px">
+              <ElSelect v-model="subject" placeholder="学科" multiple collapse-tags clearable collapse-tags-tooltip style="width: 200px">
                 <ElOption label="语文" value="语文" />
                 <ElOption label="数学" value="数学" />
                 <ElOption label="英语" value="英语" />

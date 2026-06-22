@@ -27,7 +27,7 @@ import { useAuth } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
-const { isAdmin } = useAuth()
+const { isAdmin, state } = useAuth()
 
 marked.setOptions({
   highlight: function (code, lang) {
@@ -75,6 +75,10 @@ function goBack() {
 
 async function loadNote() {
   if (isNew.value) {
+    const pref = state.user?.subjectPreference
+    if (Array.isArray(pref) && pref.length > 0) {
+      subject.value = pref[0]
+    }
     loading.value = false
     return
   }

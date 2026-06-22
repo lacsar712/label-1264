@@ -33,8 +33,10 @@ import {
 import EChart from '../../components/EChart.vue'
 import { api } from '../../lib/api'
 import { GREEN_600, RED_600 } from '../../lib/themeColors'
+import { useAuth } from '../../stores/auth'
 
 const router = useRouter()
+const { state } = useAuth()
 const loading = ref(false)
 const summaryLoading = ref(false)
 const history = ref({ total: 0, list: [] })
@@ -81,6 +83,10 @@ async function loadHistory() {
 }
 
 onMounted(async () => {
+  const pref = state.user?.subjectPreference
+  if (Array.isArray(pref) && pref.length > 0) {
+    subjectFilter.value = pref[0]
+  }
   await loadConfig()
   await loadSummary()
   await loadHistory()

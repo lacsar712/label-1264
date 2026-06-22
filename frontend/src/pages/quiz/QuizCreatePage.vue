@@ -19,8 +19,10 @@ import {
 } from 'element-plus'
 import { DocumentAdd, MagicStick, Histogram } from '@element-plus/icons-vue'
 import { api } from '../../lib/api'
+import { useAuth } from '../../stores/auth'
 
 const router = useRouter()
+const { state } = useAuth()
 const loading = ref(false)
 const config = ref({ subjects: [], difficulties: [] })
 
@@ -36,7 +38,10 @@ async function loadConfig() {
     const res = await api.get('/pages/quiz/config')
     if (res.data.ok) {
       config.value = res.data.data
-      if (!form.value.subject && config.value.subjects.length) {
+      const pref = state.user?.subjectPreference
+      if (Array.isArray(pref) && pref.length > 0 && config.value.subjects.includes(pref[0])) {
+        form.value.subject = pref[0]
+      } else if (!form.value.subject && config.value.subjects.length) {
         form.value.subject = config.value.subjects[0]
       }
     }

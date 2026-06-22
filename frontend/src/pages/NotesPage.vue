@@ -22,8 +22,10 @@ import { Edit, Delete, Plus, Search } from '@element-plus/icons-vue'
 
 import EChart from '../components/EChart.vue'
 import { api } from '../lib/api'
+import { useAuth } from '../stores/auth'
 
 const router = useRouter()
+const { state } = useAuth()
 
 const data = ref(null)
 const loading = ref(false)
@@ -54,6 +56,7 @@ const page = ref(1)
 const pageSize = ref(8)
 
 let searchTimer = null
+let _firstLoad = true
 
 async function refresh() {
   loading.value = true
@@ -75,10 +78,12 @@ async function refresh() {
     })
   } finally {
     loading.value = false
+    _firstLoad = false
   }
 }
 
 function debouncedSearch() {
+  if (_firstLoad) return
   if (searchTimer) clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
     refresh()
@@ -139,7 +144,15 @@ function formatDate(dateStr) {
   })
 }
 
-onMounted(refresh)
+function _initSubjectAndLoad() {
+  const pref = state.user?.subjectPreference
+  if (Array.isArray(pref) && pref.length > 0) {
+    subject.value = pref[0]
+  }
+  refresh()
+}
+
+onMounted(_initSubjectAndLoad)
 </script>
 
 <template>

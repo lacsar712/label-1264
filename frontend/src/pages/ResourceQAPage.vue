@@ -64,6 +64,9 @@ async function fetchIndexData() {
     if (res.data.ok) {
       availableResources.value = res.data.data.availableResources || []
       sessions.value = res.data.data.sessions || []
+      if (recommendedQuestions.value.length === 0) {
+        recommendedQuestions.value = res.data.data.recommendedQuestions || []
+      }
     }
   } catch (e) {
   } finally {

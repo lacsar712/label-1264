@@ -199,7 +199,8 @@ const KNOWLEDGE_TEMPLATES = {
 };
 
 function generateRecommendedQuestions(resource) {
-  const { name, subject, type, difficulty, tags } = resource;
+  const name = resource.name || resource.resourceName || '资源';
+  const { subject, type, difficulty, tags } = resource;
   const questions = [];
 
   questions.push(`《${name}》主要讲什么内容？`);
@@ -218,8 +219,20 @@ function generateRecommendedQuestions(resource) {
   return questions.slice(0, 6);
 }
 
+function generateGeneralRecommendedQuestions() {
+  return [
+    '如何制定高效的学习计划？',
+    '有什么好的记忆方法推荐？',
+    '如何提高学习效率和专注力？',
+    '遇到学习瓶颈时该怎么办？',
+    '怎样做好课前预习和课后复习？',
+    '如何整理学习笔记效果最好？',
+  ];
+}
+
 function generateReply(resource, userQuestion, historyMessages) {
-  const { name, subject, type, difficulty, tags } = resource;
+  const name = resource.name || resource.resourceName || '资源';
+  const { subject, type, difficulty, tags } = resource;
   const q = userQuestion.trim().toLowerCase();
 
   const subjectTemplates = KNOWLEDGE_TEMPLATES[subject] || KNOWLEDGE_TEMPLATES['数学'];
@@ -402,4 +415,5 @@ module.exports = {
   getSessionMessages,
   sendMessage,
   generateRecommendedQuestions,
+  generateGeneralRecommendedQuestions,
 };

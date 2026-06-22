@@ -25,6 +25,7 @@ const {
   getSessionMessages,
   getOrCreateSession,
   generateRecommendedQuestions,
+  generateGeneralRecommendedQuestions,
 } = require('../services/qaService');
 const { Resource, ResourceTag } = require('../models');
 
@@ -172,7 +173,8 @@ async function qaIndex(req, res) {
   const userId = req.user.id;
   const availableResources = await getAvailableResourcesForQA(userId);
   const sessions = await getUserSessions(userId);
-  res.json({ ok: true, data: { availableResources, sessions } });
+  const recommendedQuestions = generateGeneralRecommendedQuestions();
+  res.json({ ok: true, data: { availableResources, sessions, recommendedQuestions } });
 }
 
 async function qaSession(req, res) {

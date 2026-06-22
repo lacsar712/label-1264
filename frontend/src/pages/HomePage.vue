@@ -34,8 +34,8 @@ async function loadLearningPathSummary() {
   loadingPath.value = true
   try {
     const res = await api.get('/pages/learning-path/summary')
-    if (res.ok) {
-      learningPathSummary.value = res.data
+    if (res.data?.ok) {
+      learningPathSummary.value = res.data.data
     }
   } finally {
     loadingPath.value = false
@@ -223,7 +223,13 @@ async function doFavorite(row) {
                     <div style="display: flex; align-items: center; gap: 6px">
                       <ElIcon style="opacity: 0.8"><CircleCheck /></ElIcon>
                       <span style="font-size: 13px; opacity: 0.9">
-                        资源: {{ learningPathSummary.currentPhase.completedResources }}/{{ learningPathSummary.currentPhase.totalResources }}
+                        必修资源: {{ learningPathSummary.currentPhase.completedRequired }}/{{ learningPathSummary.currentPhase.requiredCount }}
+                      </span>
+                    </div>
+                    <div v-if="learningPathSummary.currentPhase.optionalCount > 0" style="display: flex; align-items: center; gap: 6px">
+                      <ElIcon style="opacity: 0.7"><Star /></ElIcon>
+                      <span style="font-size: 13px; opacity: 0.8">
+                        选修: {{ learningPathSummary.currentPhase.completedOptional }}/{{ learningPathSummary.currentPhase.optionalCount }}
                       </span>
                     </div>
                   </div>

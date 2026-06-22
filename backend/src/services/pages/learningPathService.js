@@ -25,6 +25,30 @@ function calculatePhaseProgress(phaseResources) {
   return total.length > 0 ? completed / total.length : 0;
 }
 
+function getPhaseStats(phaseResources) {
+  const resources = phaseResources || [];
+  const requiredResources = resources.filter(r => r.isRequired);
+  const optionalResources = resources.filter(r => !r.isRequired);
+  const hasRequired = requiredResources.length > 0;
+
+  const progressBase = hasRequired ? requiredResources : resources;
+  const completedRequired = requiredResources.filter(r => r.completed).length;
+  const completedOptional = optionalResources.filter(r => r.completed).length;
+
+  return {
+    progress: progressBase.length > 0
+      ? progressBase.filter(r => r.completed).length / progressBase.length
+      : 0,
+    totalResources: resources.length,
+    completedResources: resources.filter(r => r.completed).length,
+    requiredCount: requiredResources.length,
+    completedRequired: completedRequired,
+    optionalCount: optionalResources.length,
+    completedOptional: completedOptional,
+    hasRequired,
+  };
+}
+
 function calculateOverallProgress(phases) {
   if (!phases || phases.length === 0) return 0;
   const totalHours = phases.reduce((sum, p) => sum + safeNumber(p.estimatedHours), 0);
@@ -223,20 +247,21 @@ async function getLearningPathSummary(userId) {
   if (!learningPath) return null;
 
   const phases = learningPath.phases || [];
+  const phaseStats = [];
   for (const phase of phases) {
-    phase.progress = calculatePhaseProgress(phase.resources);
-    phase.completedResources = (phase.resources || []).filter(r => r.completed).length;
+    const stats = getPhaseStats(phase.resources);
+    phaseStats.push({ ...phase, ...stats });
   }
 
-  learningPath.overallProgress = calculateOverallProgress(phases);
+  const overallProgress = calculateOverallProgress(phaseStats);
 
-  const currentPhase = phases.find(p => p.id === learningPath.currentPhaseId) || phases[0];
+  const currentPhase = phaseStats.find(p => p.id === learningPath.currentPhaseId) || phaseStats[0];
 
   return {
     learningPathId: learningPath.id,
     name: learningPath.name,
     description: learningPath.description,
-    overallProgress: learningPath.overallProgress,
+    overallProgress,
     totalEstimatedHours: learningPath.totalEstimatedHours,
     status: learningPath.status,
     currentPhase: currentPhase ? {
@@ -244,8 +269,13 @@ async function getLearningPathSummary(userId) {
       name: currentPhase.name,
       goal: currentPhase.goal,
       progress: currentPhase.progress,
-      completedResources: currentPhase.completedResources,
       totalResources: currentPhase.totalResources,
+      completedResources: currentPhase.completedResources,
+      requiredCount: currentPhase.requiredCount,
+      completedRequired: currentPhase.completedRequired,
+      optionalCount: currentPhase.optionalCount,
+      completedOptional: currentPhase.completedOptional,
+      hasRequired: currentPhase.hasRequired,
       estimatedHours: currentPhase.estimatedHours,
       difficulty: currentPhase.difficulty,
       status: currentPhase.status,
@@ -278,8 +308,7 @@ async function getFullLearningPath(userId) {
       progressPercent: r.progressPercent,
     }));
 
-    const progress = calculatePhaseProgress(phase.resources);
-    const completedResources = resources.filter(r => r.completed).length;
+    const stats = getPhaseStats(phase.resources);
 
     phaseData.push({
       id: phase.id,
@@ -290,9 +319,14 @@ async function getFullLearningPath(userId) {
       estimatedHours: phase.estimatedHours,
       difficulty: phase.difficulty,
       milestone: phase.milestone,
-      progress,
-      completedResources,
-      totalResources: resources.length,
+      progress: stats.progress,
+      totalResources: stats.totalResources,
+      completedResources: stats.completedResources,
+      requiredCount: stats.requiredCount,
+      completedRequired: stats.completedRequired,
+      optionalCount: stats.optionalCount,
+      completedOptional: stats.completedOptional,
+      hasRequired: stats.hasRequired,
       status: phase.status,
       startedAt: phase.startedAt,
       completedAt: phase.completedAt,

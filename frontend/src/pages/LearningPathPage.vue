@@ -98,8 +98,8 @@ async function toggleResource(resourceId, completed) {
     const res = await api.post(`/actions/learning-path/resources/${resourceId}/toggle`, {
       completed: !completed,
     })
-    if (res.ok) {
-      data.value = res.data
+    if (res.data?.ok) {
+      data.value = res.data.data
     }
   } finally {
     updatingResource.value = null
@@ -224,7 +224,7 @@ function scrollToPhase(phaseId) {
                   </ElTag>
                 </div>
                 <div style="font-size: 11px; color: #94a3b8; margin-top: 2px">
-                  {{ formatHours(phase.estimatedHours) }} · {{ phase.completedResources }}/{{ phase.totalResources }}资源
+                  {{ formatHours(phase.estimatedHours) }} · 必修{{ phase.completedRequired }}/{{ phase.requiredCount }}
                 </div>
               </ElTimelineItem>
             </ElTimeline>
@@ -312,18 +312,32 @@ function scrollToPhase(phaseId) {
                       </div>
                     </div>
 
-                    <div style="margin-top: 14px; display: flex; align-items: center; gap: 16px">
-                      <div style="flex: 1">
+                    <div style="margin-top: 14px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+                      <div style="flex: 1; min-width: 200px">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
-                          <span style="font-size: 13px; font-weight: 600">阶段进度</span>
+                          <span style="font-size: 13px; font-weight: 600">阶段进度（必修）</span>
                           <span style="font-size: 13px; color: #2563eb; font-weight: 600">
-                            {{ phase.completedResources }}/{{ phase.totalResources }} 资源
+                            {{ phase.completedRequired }}/{{ phase.requiredCount }}
                           </span>
                         </div>
                         <ElProgress
                           :percentage="Math.round(phase.progress * 100)"
                           :stroke-width="8"
                           :color="statusColorMap[phase.status]"
+                          text-inside
+                        />
+                      </div>
+                      <div v-if="phase.optionalCount > 0" style="flex: 1; min-width: 200px">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px">
+                          <span style="font-size: 13px; font-weight: 600; color: #64748b">选修拓展</span>
+                          <span style="font-size: 13px; color: #f59e0b; font-weight: 600">
+                            {{ phase.completedOptional }}/{{ phase.optionalCount }}
+                          </span>
+                        </div>
+                        <ElProgress
+                          :percentage="phase.optionalCount > 0 ? Math.round(phase.completedOptional / phase.optionalCount * 100) : 0"
+                          :stroke-width="8"
+                          color="#f59e0b"
                           text-inside
                         />
                       </div>

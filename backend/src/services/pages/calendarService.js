@@ -35,14 +35,12 @@ function getIntensityLevel(minutes) {
   return 5;
 }
 
-function calculateConsecutiveDays(dailyMap, targetDate, startDate) {
+function calculateConsecutiveDays(dailyMap, targetDate) {
   let consecutive = 0;
   const current = new Date(targetDate);
   
   while (true) {
     const dateStr = toDateOnly(current);
-    if (dateStr < startDate) break;
-    
     const totalMinutes = dailyMap[dateStr]?.totalMinutes || 0;
     if (totalMinutes >= 60) {
       consecutive += 1;
@@ -58,10 +56,14 @@ function calculateConsecutiveDays(dailyMap, targetDate, startDate) {
 async function getMonthCalendarData(userId, year, month) {
   const { startDate, endDate, daysInMonth } = getMonthRange(year, month);
   
+  const queryStart = new Date(startDate);
+  queryStart.setDate(queryStart.getDate() - 60);
+  const queryStartDate = toDateOnly(queryStart);
+  
   const dailyRecords = await LearningDaily.findAll({
     where: {
       userId,
-      date: { [Op.between]: [startDate, endDate] },
+      date: { [Op.between]: [queryStartDate, endDate] },
     },
     order: [['date', 'ASC']],
   });
@@ -92,7 +94,7 @@ async function getMonthCalendarData(userId, year, month) {
   for (let day = 1; day <= daysInMonth; day += 1) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dayData = dailyMap[dateStr] || { date: dateStr, totalMinutes: 0, subjects: [], completedCount: 0, avgMatchScore: 0 };
-    const consecutiveDays = calculateConsecutiveDays(dailyMap, dateStr, startDate);
+    const consecutiveDays = calculateConsecutiveDays(dailyMap, dateStr);
     
     calendarDays.push({
       date: dateStr,
@@ -108,12 +110,14 @@ async function getMonthCalendarData(userId, year, month) {
     });
   }
   
+  const monthDaily = Object.values(dailyMap).filter(d => d.date >= startDate && d.date <= endDate);
+  
   const monthSummary = {
     totalDays: daysInMonth,
-    studyDays: Object.values(dailyMap).filter(d => d.totalMinutes > 0).length,
-    totalMinutes: Object.values(dailyMap).reduce((sum, d) => sum + d.totalMinutes, 0),
+    studyDays: monthDaily.filter(d => d.totalMinutes > 0).length,
+    totalMinutes: monthDaily.reduce((sum, d) => sum + d.totalMinutes, 0),
     avgMinutesPerDay: Math.round(
-      Object.values(dailyMap).reduce((sum, d) => sum + d.totalMinutes, 0) / daysInMonth
+      monthDaily.reduce((sum, d) => sum + d.totalMinutes, 0) / daysInMonth
     ),
     maxConsecutiveDays: Math.max(...calendarDays.map(d => d.consecutiveDays)),
   };

@@ -212,7 +212,7 @@ onMounted(loadCalendarData)
                       :style="intensityColors[level - 1]"
                     ></div>
                     <span style="font-size: 11px; color: #64748b">
-                      {{ level === 1 ? '<30' : level === 2 ? '30-60' : level === 3 ? '60-90' : level === 4 ? '90-120' : level === 5 ? '≥120' : '无' }}
+                      {{ level === 1 ? '无' : level === 2 ? '<30' : level === 3 ? '30-60' : level === 4 ? '60-90' : level === 5 ? '90-120' : '≥120' }}
                     </span>
                   </div>
                 </div>

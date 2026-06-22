@@ -142,22 +142,58 @@ async function getResourcesWithRatings(resourceIds) {
   const statsMap = {};
   for (const r of reviews) {
     if (!statsMap[r.resourceId]) {
-      statsMap[r.resourceId] = { sum: 0, count: 0 };
+      statsMap[r.resourceId] = { sum: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
     }
     statsMap[r.resourceId].sum += safeNumber(r.rating);
     statsMap[r.resourceId].count += 1;
+    statsMap[r.resourceId].distribution[r.rating] = (statsMap[r.resourceId].distribution[r.rating] || 0) + 1;
   }
 
   const result = {};
   for (const id of resourceIds) {
-    const s = statsMap[id] || { sum: 0, count: 0 };
+    const s = statsMap[id] || { sum: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
     result[id] = {
       averageRating: s.count > 0 ? Number((s.sum / s.count).toFixed(2)) : 0,
       reviewCount: s.count,
+      distribution: s.distribution,
     };
   }
 
   return result;
+}
+
+async function getTopRatedResources(limit = 20) {
+  const { Resource } = require('../models');
+  const allResources = await Resource.findAll({
+    where: { deleted: false, status: '上架' },
+    attributes: ['id', 'code', 'name', 'subject', 'difficulty', 'heat', 'updatedAt'],
+    raw: true,
+  });
+
+  const resourceIds = allResources.map((r) => r.id);
+  const ratingsMap = await getResourcesWithRatings(resourceIds);
+
+  const withRatings = allResources
+    .map((r) => ({
+      resourceId: r.code,
+      resourceDbId: r.id,
+      name: r.name,
+      subject: r.subject,
+      difficulty: r.difficulty,
+      heat: r.heat,
+      updatedAt: r.updatedAt,
+      averageRating: ratingsMap[r.id]?.averageRating || 0,
+      reviewCount: ratingsMap[r.id]?.reviewCount || 0,
+      distribution: ratingsMap[r.id]?.distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    }))
+    .filter((r) => r.reviewCount > 0)
+    .sort((a, b) => {
+      if (b.averageRating !== a.averageRating) return b.averageRating - a.averageRating;
+      return b.reviewCount - a.reviewCount;
+    })
+    .slice(0, limit);
+
+  return withRatings;
 }
 
 module.exports = {
@@ -167,4 +203,5 @@ module.exports = {
   getUserReview,
   createOrUpdateReview,
   getResourcesWithRatings,
+  getTopRatedResources,
 };

@@ -236,6 +236,27 @@ function formatDate(dt) {
   const d = new Date(dt)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+function getDistributionBars(distribution) {
+  if (!distribution) return []
+  const dist = distribution
+  const total = Object.values(dist).reduce((s, n) => s + Number(n || 0), 0) || 1
+  const bars = []
+  for (let star = 5; star >= 1; star -= 1) {
+    const count = Number(dist[star] || 0)
+    bars.push({
+      star,
+      count,
+      percent: Math.round((count / total) * 100),
+      color: star >= 4 ? '#10b981' : star === 3 ? '#f59e0b' : '#ef4444',
+    })
+  }
+  return bars
+}
+
+const topRatedList = computed(() => {
+  return (data.value?.topRatedResources || []).slice(0, 8)
+})
 </script>
 
 <template>
@@ -317,10 +338,27 @@ function formatDate(dt) {
                 <ElTableColumn prop="subject" label="学科" width="70" />
                 <ElTableColumn prop="difficulty" label="难度" width="70" />
                 <ElTableColumn prop="heat" label="热度" width="70" />
-                <ElTableColumn label="评分" width="140">
+                <ElTableColumn label="评分" width="220">
                   <template #default="{ row }">
-                    <RatingDisplay :rating="Number(row.averageRating)" size="small" />
-                    <div style="font-size: 11px; color: #94a3b8">{{ row.reviewCount }} 条评价</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px">
+                      <div style="display: flex; align-items: center; gap: 6px">
+                        <RatingDisplay :rating="Number(row.averageRating)" size="small" />
+                        <span style="font-size: 11px; color: #94a3b8">{{ row.reviewCount }} 条</span>
+                      </div>
+                      <div v-if="row.reviewCount > 0" style="display: flex; gap: 2px; height: 6px">
+                        <div
+                          v-for="bar in getDistributionBars(row.distribution)"
+                          :key="bar.star"
+                          :style="{
+                            flex: bar.percent,
+                            minWidth: bar.percent > 0 ? '2px' : '0px',
+                            background: bar.color,
+                            borderRadius: '2px',
+                          }"
+                          :title="`${bar.star}星: ${bar.count}条 (${bar.percent}%)`"
+                        />
+                      </div>
+                    </div>
                   </template>
                 </ElTableColumn>
                 <ElTableColumn label="操作" width="100" fixed="right">
@@ -481,9 +519,12 @@ function formatDate(dt) {
           <div style="font-weight: 700; margin-bottom: 12px">高口碑资源榜</div>
           <ElSkeleton :loading="loading" animated>
             <el-scrollbar height="360px">
-              <div style="display: flex; flex-direction: column; gap: 10px; padding: 4px">
+              <div v-if="topRatedList.length === 0" style="text-align: center; padding: 40px; color: #94a3b8">
+                暂无评分数据
+              </div>
+              <div v-else style="display: flex; flex-direction: column; gap: 10px; padding: 4px">
                 <div
-                  v-for="(row, idx) in (data?.searchTable || []).filter(r => Number(r.averageRating) >= 4.0).slice(0, 8)"
+                  v-for="(row, idx) in topRatedList"
                   :key="row.resourceId"
                   :style="getTopResourceCardStyle(idx)"
                 >

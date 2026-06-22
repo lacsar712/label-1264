@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 
 const { Resource, ResourceTag, UserResource } = require('../../models');
-const { getResourcesWithRatings, getRecentReviews } = require('../resourceReviewService');
+const { getResourcesWithRatings, getRecentReviews, getTopRatedResources } = require('../resourceReviewService');
 
 const SUBJECTS = ['语文', '数学', '英语', '物理', '化学', '生物'];
 const RESOURCE_TYPES = ['课程', '课件', '题库', '视频'];
@@ -60,8 +60,8 @@ async function getResourcesData(userId) {
   }
   const resourceCategoryStacked = Object.values(categoryMap);
 
-  const searchTable = resources.slice(0, 20).map((r) => {
-    const rating = ratingsMap[r.id] || { averageRating: 0, reviewCount: 0 };
+  const searchTable = resources.map((r) => {
+    const rating = ratingsMap[r.id] || { averageRating: 0, reviewCount: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
     return {
       resourceId: r.code,
       resourceDbId: r.id,
@@ -72,9 +72,12 @@ async function getResourcesData(userId) {
       updatedAt: r.updatedAt,
       averageRating: rating.averageRating,
       reviewCount: rating.reviewCount,
+      distribution: rating.distribution,
       canReview: completedResourceIds.includes(r.id),
     };
   });
+
+  const topRatedResources = await getTopRatedResources(20);
 
   const tagCount = tags.reduce((acc, t) => {
     acc[t.name] = acc[t.name] || { name: t.name, count: 0, weightSum: 0 };
@@ -159,6 +162,7 @@ async function getResourcesData(userId) {
     favoriteCompletionTrend7d,
     favoriteTable,
     recentReviews,
+    topRatedResources,
   };
 }
 

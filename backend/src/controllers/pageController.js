@@ -56,11 +56,18 @@ async function systemConfig(req, res) {
 }
 
 async function notes(req, res) {
-  res.json({ ok: true, data: await getNotesData(req.user.id) });
+  const { keyword = '', subject = '' } = req.query;
+  res.json({ ok: true, data: await getNotesData(req.user.id, { keyword, subject }) });
 }
 
 async function adminNotes(req, res) {
-  res.json({ ok: true, data: await getAdminNotesData() });
+  const { keyword = '', subject = '', userId = '' } = req.query;
+  const options = {
+    keyword,
+    subject,
+    userId: userId ? parseInt(userId) : null,
+  };
+  res.json({ ok: true, data: await getAdminNotesData(options) });
 }
 
 async function noteDetail(req, res) {

@@ -2,9 +2,23 @@ const { Op } = require('sequelize');
 
 const { LearningNote, User, Resource } = require('../../models');
 
-async function getNotesData(userId) {
+async function getNotesData(userId, options = {}) {
+  const { keyword = '', subject = '' } = options;
+
+  const where = { userId };
+  if (subject) {
+    where.subject = subject;
+  }
+  if (keyword && keyword.trim()) {
+    const kw = keyword.trim();
+    where[Op.or] = [
+      { title: { [Op.like]: `%${kw}%` } },
+      { content: { [Op.like]: `%${kw}%` } },
+    ];
+  }
+
   const notes = await LearningNote.findAll({
-    where: { userId },
+    where,
     include: [
       {
         model: Resource,
@@ -16,7 +30,11 @@ async function getNotesData(userId) {
     order: [['updatedAt', 'DESC']],
   });
 
-  const subjects = [...new Set(notes.map((n) => n.subject))].sort();
+  const allSubjectsNotes = await LearningNote.findAll({
+    where: { userId },
+    attributes: ['subject'],
+  });
+  const subjects = [...new Set(allSubjectsNotes.map((n) => n.subject))].sort();
 
   const noteList = notes.map((n) => ({
     id: n.id,
@@ -30,9 +48,13 @@ async function getNotesData(userId) {
     updatedAt: n.updatedAt,
   }));
 
+  const allNotesForStats = await LearningNote.findAll({
+    where: { userId },
+    attributes: ['subject'],
+  });
   const subjectStats = subjects.map((s) => ({
     subject: s,
-    count: notes.filter((n) => n.subject === s).length,
+    count: allNotesForStats.filter((n) => n.subject === s).length,
   }));
 
   return {
@@ -42,15 +64,55 @@ async function getNotesData(userId) {
   };
 }
 
-async function getAdminNotesData() {
-  const notes = await LearningNote.findAll({
-    include: [
-      {
-        model: User,
-        as: 'user',
-        attributes: ['id', 'name', 'username'],
-        required: true,
+async function getAdminNotesData(options = {}) {
+  const { keyword = '', subject = '', userId = null } = options;
+  const kw = keyword.trim();
+
+  const where = {};
+  if (subject) {
+    where.subject = subject;
+  }
+  if (userId) {
+    where.userId = userId;
+  }
+
+  const contentOr = [];
+  if (kw) {
+    contentOr.push({ title: { [Op.like]: `%${kw}%` } });
+    contentOr.push({ content: { [Op.like]: `%${kw}%` } });
+  }
+
+  if (kw && !userId) {
+    const matchedUsers = await User.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.like]: `%${kw}%` } },
+          { username: { [Op.like]: `%${kw}%` } },
+        ],
       },
+      attributes: ['id'],
+    });
+    const matchedUserIds = matchedUsers.map((u) => u.id);
+    if (matchedUserIds.length > 0) {
+      contentOr.push({ userId: { [Op.in]: matchedUserIds } });
+    }
+  }
+
+  if (contentOr.length > 0) {
+    where[Op.or] = contentOr;
+  }
+
+  const userInclude = {
+    model: User,
+    as: 'user',
+    attributes: ['id', 'name', 'username'],
+    required: true,
+  };
+
+  const notes = await LearningNote.findAll({
+    where,
+    include: [
+      userInclude,
       {
         model: Resource,
         as: 'resource',
@@ -61,10 +123,23 @@ async function getAdminNotesData() {
     order: [['updatedAt', 'DESC']],
   });
 
-  const subjects = [...new Set(notes.map((n) => n.subject))].sort();
-  const students = [...new Map(notes.map((n) => [n.user.id, { id: n.user.id, name: n.user.name, username: n.user.username }])).values()];
+  const filteredNotes = notes;
 
-  const noteList = notes.map((n) => ({
+  const allNotes = await LearningNote.findAll({
+    include: [
+      {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'name', 'username'],
+        required: true,
+      },
+    ],
+  });
+
+  const subjects = [...new Set(allNotes.map((n) => n.subject))].sort();
+  const students = [...new Map(allNotes.map((n) => [n.user.id, { id: n.user.id, name: n.user.name, username: n.user.username }])).values()];
+
+  const noteList = filteredNotes.map((n) => ({
     id: n.id,
     userId: n.userId,
     userName: n.user.name,
@@ -81,13 +156,13 @@ async function getAdminNotesData() {
 
   const subjectStats = subjects.map((s) => ({
     subject: s,
-    count: notes.filter((n) => n.subject === s).length,
+    count: allNotes.filter((n) => n.subject === s).length,
   }));
 
   const studentStats = students.map((s) => ({
     userId: s.id,
     name: s.name,
-    count: notes.filter((n) => n.userId === s.id).length,
+    count: allNotes.filter((n) => n.userId === s.id).length,
   }));
 
   return {

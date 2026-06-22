@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ElButton,
@@ -16,15 +16,17 @@ import {
   ElTableColumn,
   ElTag,
   ElEmpty,
+  ElNotification,
 } from 'element-plus'
 import { Edit, Delete, Plus, Search } from '@element-plus/icons-vue'
 
 import EChart from '../components/EChart.vue'
 import { api } from '../lib/api'
-import { usePageData } from '../lib/usePageData'
 
 const router = useRouter()
-const { data, loading, refresh } = usePageData('/pages/notes')
+
+const data = ref(null)
+const loading = ref(false)
 
 const subjectStatsOption = computed(() => {
   const stats = data.value?.subjectStats || []
@@ -51,21 +53,48 @@ const sortOrder = ref('desc')
 const page = ref(1)
 const pageSize = ref(8)
 
-const filteredNotes = computed(() => {
-  const rows = data.value?.noteList || []
-  const kw = keyword.value.trim().toLowerCase()
-  return rows.filter((r) => {
-    if (subject.value && r.subject !== subject.value) return false
-    if (!kw) return true
-    return (
-      String(r.title || '').toLowerCase().includes(kw) ||
-      String(r.summary || '').toLowerCase().includes(kw)
-    )
-  })
+let searchTimer = null
+
+async function refresh() {
+  loading.value = true
+  try {
+    const resp = await api.get('/pages/notes', {
+      params: {
+        keyword: keyword.value.trim(),
+        subject: subject.value,
+      },
+    })
+    data.value = resp.data.data
+    page.value = 1
+  } catch (err) {
+    ElNotification({
+      title: '加载失败',
+      message: '页面数据获取失败，请稍后重试',
+      type: 'error',
+      duration: 2500,
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+function debouncedSearch() {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    refresh()
+  }, 300)
+}
+
+watch([keyword, subject], () => {
+  debouncedSearch()
+})
+
+watch([sortField, sortOrder, pageSize], () => {
+  page.value = 1
 })
 
 const sortedNotes = computed(() => {
-  const rows = filteredNotes.value.slice()
+  const rows = (data.value?.noteList || []).slice()
   const order = sortOrder.value === 'asc' ? 1 : -1
   rows.sort((a, b) => {
     if (sortField.value === 'title') {
@@ -77,10 +106,6 @@ const sortedNotes = computed(() => {
     return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * order
   })
   return rows
-})
-
-watch([keyword, subject, sortField, sortOrder, pageSize], () => {
-  page.value = 1
 })
 
 const pagedNotes = computed(() => {
@@ -113,6 +138,8 @@ function formatDate(dateStr) {
     minute: '2-digit',
   })
 }
+
+onMounted(refresh)
 </script>
 
 <template>
@@ -208,7 +235,7 @@ function formatDate(dateStr) {
                   </template>
                 </ElTableColumn>
               </ElTable>
-              <ElEmpty v-else description="暂无笔记，点击「新建笔记」开始记录" />
+              <ElEmpty v-else description="暂无匹配的笔记" />
             </el-scrollbar>
             <div v-if="sortedNotes.length > 0" style="display: flex; justify-content: flex-end; padding-top: 8px">
               <ElPagination

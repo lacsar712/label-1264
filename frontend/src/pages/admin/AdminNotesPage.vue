@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ElButton,
@@ -15,15 +15,17 @@ import {
   ElTableColumn,
   ElTag,
   ElEmpty,
+  ElNotification,
 } from 'element-plus'
 import { View, Search } from '@element-plus/icons-vue'
 
 import EChart from '../../components/EChart.vue'
 import { api } from '../../lib/api'
-import { usePageData } from '../../lib/usePageData'
 
 const router = useRouter()
-const { data, loading, refresh } = usePageData('/pages/admin/notes')
+
+const data = ref(null)
+const loading = ref(false)
 
 const subjectStatsOption = computed(() => {
   const stats = data.value?.subjectStats || []
@@ -62,6 +64,11 @@ const studentStatsOption = computed(() => {
   }
 })
 
+const totalNotes = computed(() => {
+  const stats = data.value?.studentStats || []
+  return stats.reduce((sum, s) => sum + (s.count || 0), 0)
+})
+
 const keyword = ref('')
 const subject = ref('')
 const student = ref('')
@@ -70,23 +77,49 @@ const sortOrder = ref('desc')
 const page = ref(1)
 const pageSize = ref(8)
 
-const filteredNotes = computed(() => {
-  const rows = data.value?.noteList || []
-  const kw = keyword.value.trim().toLowerCase()
-  return rows.filter((r) => {
-    if (subject.value && r.subject !== subject.value) return false
-    if (student.value && r.userId !== parseInt(student.value)) return false
-    if (!kw) return true
-    return (
-      String(r.title || '').toLowerCase().includes(kw) ||
-      String(r.summary || '').toLowerCase().includes(kw) ||
-      String(r.userName || '').toLowerCase().includes(kw)
-    )
-  })
+let searchTimer = null
+
+async function refresh() {
+  loading.value = true
+  try {
+    const resp = await api.get('/pages/admin/notes', {
+      params: {
+        keyword: keyword.value.trim(),
+        subject: subject.value,
+        userId: student.value || '',
+      },
+    })
+    data.value = resp.data.data
+    page.value = 1
+  } catch (err) {
+    ElNotification({
+      title: '加载失败',
+      message: '页面数据获取失败，请稍后重试',
+      type: 'error',
+      duration: 2500,
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+function debouncedSearch() {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    refresh()
+  }, 300)
+}
+
+watch([keyword, subject, student], () => {
+  debouncedSearch()
+})
+
+watch([sortField, sortOrder, pageSize], () => {
+  page.value = 1
 })
 
 const sortedNotes = computed(() => {
-  const rows = filteredNotes.value.slice()
+  const rows = (data.value?.noteList || []).slice()
   const order = sortOrder.value === 'asc' ? 1 : -1
   rows.sort((a, b) => {
     if (sortField.value === 'title') {
@@ -101,10 +134,6 @@ const sortedNotes = computed(() => {
     return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * order
   })
   return rows
-})
-
-watch([keyword, subject, student, sortField, sortOrder, pageSize], () => {
-  page.value = 1
 })
 
 const pagedNotes = computed(() => {
@@ -127,6 +156,8 @@ function formatDate(dateStr) {
     minute: '2-digit',
   })
 }
+
+onMounted(refresh)
 </script>
 
 <template>
@@ -170,7 +201,7 @@ function formatDate(dateStr) {
               <div style="flex: 1; min-width: 100px; padding: 16px; background: #eff6ff; border-radius: 12px">
                 <div style="font-size: 12px; color: #64748b; margin-bottom: 4px">笔记总数</div>
                 <div style="font-size: 28px; font-weight: 700; color: #2563eb">
-                  {{ data?.noteList?.length || 0 }}
+                  {{ totalNotes }}
                 </div>
               </div>
               <div style="flex: 1; min-width: 100px; padding: 16px; background: #f0fdf4; border-radius: 12px">
@@ -270,7 +301,7 @@ function formatDate(dateStr) {
                   </template>
                 </ElTableColumn>
               </ElTable>
-              <ElEmpty v-else description="暂无笔记数据" />
+              <ElEmpty v-else description="暂无匹配的笔记" />
             </el-scrollbar>
             <div v-if="sortedNotes.length > 0" style="display: flex; justify-content: flex-end; padding-top: 8px">
               <ElPagination

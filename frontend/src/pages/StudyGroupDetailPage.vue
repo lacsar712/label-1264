@@ -66,11 +66,11 @@ const chartOption = computed(() => {
   const stats = detail.value.stats
   const names = stats.map((s) => s.name)
   const studyMinutes = stats.map((s) => s.studyMinutes)
-  const completedCount = stats.map((s) => s.totalCompletedResources)
+  const completedCount = stats.map((s) => s.weeklyCompletedResources)
 
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { data: ['本周学习时长(min)', '累计完成资源数'], top: 0 },
+    legend: { data: ['本周学习时长(min)', '本周完成资源数'], top: 0 },
     grid: { left: 60, right: 30, bottom: 40, top: 40 },
     xAxis: {
       type: 'category',
@@ -90,7 +90,7 @@ const chartOption = computed(() => {
         itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
       },
       {
-        name: '累计完成资源数',
+        name: '本周完成资源数',
         type: 'bar',
         yAxisIndex: 1,
         data: completedCount,
@@ -264,8 +264,8 @@ async function handleTransfer() {
                       <ElTag v-if="member.role === 'leader'" type="warning" size="small">组长</ElTag>
                     </div>
                     <div class="member-stat">
-                      本周 {{ formatMinutes(detail.stats.find(s => s.userId === member.userId)?.studyMinutes || 0) }}
-                      · 完成 {{ detail.stats.find(s => s.userId === member.userId)?.totalCompletedResources || 0 }} 资源
+                      本周学习 {{ formatMinutes(detail.stats.find(s => s.userId === member.userId)?.studyMinutes || 0) }}
+                      · 本周完成 {{ detail.stats.find(s => s.userId === member.userId)?.weeklyCompletedResources || 0 }} 资源
                     </div>
                   </div>
                   <div v-if="isLeader && member.role !== 'leader'" class="member-actions">
@@ -312,7 +312,7 @@ async function handleTransfer() {
         <ElRow :gutter="16" class="section-row">
           <ElCol :span="24">
             <ElCard class="panel-card">
-              <div class="card-title">成员学习数据对比</div>
+              <div class="card-title">成员本周学习数据对比</div>
               <EChart v-if="detail.stats.length" :option="chartOption" height="340" />
               <ElEmpty v-else description="暂无数据" :image-size="60" />
             </ElCard>

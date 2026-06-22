@@ -178,6 +178,7 @@ async function getGroupDetail(userId, groupId) {
     where: {
       userId: { [Op.in]: memberIds },
       status: '已完成',
+      completedAt: { [Op.gte]: weekStart },
     },
     attributes: ['userId', [sequelize.fn('COUNT', sequelize.col('id')), 'cnt']],
     group: ['userId'],
@@ -197,7 +198,7 @@ async function getGroupDetail(userId, groupId) {
       avatarColor: m.avatarColor,
       studyMinutes: s.studyMinutes,
       completedCount: s.completedCount,
-      totalCompletedResources: Number(completedMap[m.userId] || 0),
+      weeklyCompletedResources: Number(completedMap[m.userId] || 0),
     };
   });
 

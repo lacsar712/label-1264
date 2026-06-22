@@ -53,7 +53,7 @@ onMounted(() => {
     fetchUnreadCount()
     refreshTimer = setInterval(() => {
       fetchUnreadCount()
-    }, 60000)
+    }, 15000)
   }
 })
 

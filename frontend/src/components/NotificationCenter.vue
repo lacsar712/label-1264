@@ -22,6 +22,7 @@ const emit = defineEmits(['update:visible'])
 const {
   state,
   fetchNotifications,
+  fetchUnreadCount,
   markAsRead,
   markAllAsRead,
   deleteNotification,
@@ -79,7 +80,7 @@ async function handleMarkRead(item) {
 }
 
 async function handleMarkAll() {
-  if (currentUnreadCount.value === 0) {
+  if (state.unreadCount === 0) {
     ElMessage.info('没有未读消息')
     return
   }
@@ -120,6 +121,9 @@ watch(
   (val) => {
     if (val) {
       fetchNotifications()
+      fetchUnreadCount()
+    } else {
+      fetchUnreadCount()
     }
   }
 )
